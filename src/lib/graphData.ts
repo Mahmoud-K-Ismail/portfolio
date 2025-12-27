@@ -10,6 +10,8 @@ export interface GraphNode {
   size: number;
   parentId?: string; // For expand/collapse
   description?: string;
+  image?: string; // Path to image/logo
+  icon?: string; // Icon name for lucide-react
   details?: {
     title: string;
     subtitle?: string;
@@ -18,6 +20,7 @@ export interface GraphNode {
     bullets: string[];
     technologies?: string[];
     links?: { label: string; url: string }[];
+    image?: string; // Image for detail panel
   };
 }
 
@@ -54,11 +57,13 @@ export const graphData: GraphData = {
       color: colors.root,
       size: 28,
       description: 'CS & Applied Math @ NYU',
+      image: '/202510-30-NYUAD_mki4895-0785-RetSquare.jpg',
       details: {
         title: 'Mahmoud Kassem',
         subtitle: 'Computer Science & Applied Mathematics',
         period: 'Graduating May 2026',
         location: 'NYU Abu Dhabi',
+        image: '/202510-30-NYUAD_mki4895-0785-RetSquare.jpg',
         bullets: [
           'Building scalable distributed systems and cloud-native applications',
           'Expertise in Java, Python, and microservices architecture',
@@ -82,6 +87,7 @@ export const graphData: GraphData = {
       type: 'category',
       color: colors.experience,
       size: 20,
+      icon: 'Briefcase',
     },
     {
       id: 'projects',
@@ -89,6 +95,7 @@ export const graphData: GraphData = {
       type: 'category',
       color: colors.projects,
       size: 20,
+      icon: 'FolderKanban',
     },
     {
       id: 'research',
@@ -96,6 +103,8 @@ export const graphData: GraphData = {
       type: 'category',
       color: colors.research,
       size: 20,
+      icon: 'Microscope',
+      image: '/download.png',
     },
     {
       id: 'skills',
@@ -103,6 +112,16 @@ export const graphData: GraphData = {
       type: 'category',
       color: colors.skills,
       size: 20,
+      icon: 'Code',
+    },
+    {
+      id: 'education',
+      name: 'Education',
+      type: 'category',
+      color: colors.education,
+      size: 20,
+      icon: 'GraduationCap',
+      image: '/Gemini_Generated_Image_ikf4c9ikf4c9ikf4 (1).png',
     },
     {
       id: 'resume',
@@ -135,11 +154,13 @@ export const graphData: GraphData = {
       color: colors.experience,
       size: 14,
       parentId: 'experience',
+      image: '/monta_logo.png',
       details: {
         title: 'Monta AI',
         subtitle: 'AI Engineer Intern',
         period: 'Sep 2025 – Present',
         location: 'San Francisco, CA (Remote)',
+        image: '/monta_logo.png',
         bullets: [
           'Engineering production RAG system using FastAPI on Azure to convert complex construction data (BIM models, IFC files) into queryable knowledge bases, reducing document lookup time by 70%',
           'Developed parsing pipelines using LlamaIndex and Ollama to extract structured logic from technical documents, mitigating hallucination risks in high-stakes compliance contexts',
@@ -156,11 +177,13 @@ export const graphData: GraphData = {
       color: colors.experience,
       size: 14,
       parentId: 'experience',
+      image: '/sanad_logo.png',
       details: {
         title: 'Software Analysis & Developer Support Lab',
         subtitle: 'Software Engineering Research Intern',
         period: 'Apr 2025 – Aug 2025',
         location: 'NYU Abu Dhabi',
+        image: '/sanad_logo.png',
         bullets: [
           'Built automated pipeline using GPT-4 to systematically inject 6 types of semantic errors into code, generating novel dataset of 1,217 labeled samples for ML model evaluation',
           'Developed UniXcoder-based classifier achieving F1-score of 0.64, outperforming linear baselines by 11.7% and establishing new benchmark for logic-aware code analysis',
@@ -177,11 +200,13 @@ export const graphData: GraphData = {
       color: colors.experience,
       size: 14,
       parentId: 'experience',
+      image: '/camel_logo.png',
       details: {
         title: 'CAMeL Lab – NYU',
         subtitle: 'Software Developer & NLP Research Assistant',
         period: 'Mar 2024 – May 2025',
         location: 'NYU Abu Dhabi',
+        image: '/camel_logo.png',
         bullets: [
           'Achieved 95% synchronization accuracy across 77,429 tokens by engineering systematic mapping pipeline to align four disparate legacy datasets into unified, machine-readable corpus',
           'Architected 68-function Python preprocessing library handling specialized character sets, contributed to open-source CAMeL Tools library (500+ global users)',
@@ -201,6 +226,7 @@ export const graphData: GraphData = {
       color: colors.experience,
       size: 14,
       parentId: 'experience',
+      icon: 'BookOpen',
       details: {
         title: 'Unix Lab – NYU',
         subtitle: 'Computer Science Peer Tutor',
@@ -224,6 +250,7 @@ export const graphData: GraphData = {
       color: colors.projects,
       size: 14,
       parentId: 'projects',
+      icon: 'Database',
       details: {
         title: 'notSoSimpleDB',
         subtitle: 'Custom Database System',
@@ -242,9 +269,11 @@ export const graphData: GraphData = {
       color: colors.projects,
       size: 14,
       parentId: 'projects',
+      image: '/hackharvard_logo.png',
       details: {
         title: 'Navi',
         subtitle: 'AI-Powered Computer Navigation Assistant',
+        image: '/hackharvard_logo.png',
         bullets: [
           'Built multimodal AI tool at HackHarvard 2025 integrating Gemini Vision for real-time screenshot analysis, ElevenLabs TTS, and Porcupine wake-word detection for hands-free operation',
           'Engineered multi-turn conversational system providing step-by-step voice guidance, designed for elderly users navigating computer interfaces',
@@ -260,6 +289,7 @@ export const graphData: GraphData = {
       color: colors.projects,
       size: 14,
       parentId: 'projects',
+      icon: 'Search',
       details: {
         title: 'VoucherFinder',
         subtitle: 'AI-Powered Discount Aggregator',
@@ -278,6 +308,7 @@ export const graphData: GraphData = {
       color: colors.projects,
       size: 14,
       parentId: 'projects',
+      icon: 'Home',
       details: {
         title: 'RentIt',
         subtitle: 'Community Rental Platform',
@@ -297,6 +328,7 @@ export const graphData: GraphData = {
       color: colors.projects,
       size: 14,
       parentId: 'projects',
+      icon: 'Wallet',
       details: {
         title: 'Budgetly',
         subtitle: 'Financial Management Platform',
@@ -319,6 +351,7 @@ export const graphData: GraphData = {
       color: colors.research,
       size: 14,
       parentId: 'research',
+      icon: 'FileText',
       details: {
         title: 'ICSE 2026 Publication',
         subtitle: 'LLM4Code Workshop – Accepted',
@@ -338,6 +371,7 @@ export const graphData: GraphData = {
       color: colors.research,
       size: 14,
       parentId: 'research',
+      icon: 'Book',
       details: {
         title: 'Qamar',
         subtitle: 'Quranic Morpho-syntactic Annotation Resource',
@@ -351,6 +385,36 @@ export const graphData: GraphData = {
     },
 
     // ═══════════════════════════════════════
+    // EDUCATION ITEMS
+    // ═══════════════════════════════════════
+    {
+      id: 'nyu',
+      name: 'NYU Abu Dhabi',
+      type: 'item',
+      color: colors.education,
+      size: 14,
+      parentId: 'education',
+      image: '/NYU-Logo.png',
+      details: {
+        title: 'New York University Abu Dhabi',
+        subtitle: 'Bachelor of Science in Computer Science & Applied Mathematics',
+        period: '2022 – 2026',
+        location: 'Abu Dhabi, UAE',
+        image: '/NYU-Logo.png',
+        bullets: [
+          'GPA: 3.89/4.0 | Major GPA: 3.93/4.0',
+          'Relevant Coursework: Data Structures & Algorithms, Database Systems, Distributed Systems, Machine Learning, Software Engineering, Operating Systems',
+          'Dean\'s List: Fall 2022, Spring 2023, Fall 2023, Spring 2024, Fall 2024',
+          'Active in research labs: CAMeL Lab (NLP), SANAD Lab (Software Engineering)',
+        ],
+        technologies: ['Computer Science', 'Applied Mathematics', 'Research'],
+        links: [
+          { label: 'NYU Abu Dhabi', url: 'https://nyuad.nyu.edu/' },
+        ],
+      },
+    },
+
+    // ═══════════════════════════════════════
     // SKILL ITEMS
     // ═══════════════════════════════════════
     {
@@ -360,6 +424,7 @@ export const graphData: GraphData = {
       color: colors.skills,
       size: 14,
       parentId: 'skills',
+      icon: 'Code',
       details: {
         title: 'Programming Languages',
         bullets: [
@@ -380,6 +445,7 @@ export const graphData: GraphData = {
       color: colors.skills,
       size: 14,
       parentId: 'skills',
+      icon: 'Server',
       details: {
         title: 'Backend & Cloud',
         bullets: [
@@ -399,6 +465,7 @@ export const graphData: GraphData = {
       color: colors.skills,
       size: 14,
       parentId: 'skills',
+      icon: 'Database',
       details: {
         title: 'Database Technologies',
         bullets: [
@@ -418,6 +485,7 @@ export const graphData: GraphData = {
       color: colors.skills,
       size: 14,
       parentId: 'skills',
+      icon: 'Terminal',
       details: {
         title: 'Systems & Tools',
         bullets: [
@@ -437,6 +505,7 @@ export const graphData: GraphData = {
     { source: 'root', target: 'experience' },
     { source: 'root', target: 'projects' },
     { source: 'root', target: 'research' },
+    { source: 'root', target: 'education' },
     { source: 'root', target: 'skills' },
     { source: 'root', target: 'resume' },
 
@@ -456,6 +525,9 @@ export const graphData: GraphData = {
     // Research connections
     { source: 'research', target: 'icse-paper' },
     { source: 'research', target: 'qamar' },
+
+    // Education connections
+    { source: 'education', target: 'nyu' },
 
     // Skills connections
     { source: 'skills', target: 'languages' },

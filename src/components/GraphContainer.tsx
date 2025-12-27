@@ -12,17 +12,18 @@ const ForceGraph2D = dynamic(() => import('react-force-graph-2d'), {
 });
 
 interface GraphContainerProps {
-  onNodeClick: (node: GraphNode) => void;
+  onNodeClick: (node: GraphNode, position?: { x: number; y: number } | null) => void;
   searchTerm: string;
 }
 
 // Pre-calculate positions for categories around the root
 const CATEGORY_POSITIONS: Record<string, { x: number; y: number }> = {
   root: { x: 0, y: 0 },
-  experience: { x: -300, y: -200 },
-  projects: { x: 300, y: -200 },
-  research: { x: 300, y: 200 },
-  skills: { x: -300, y: 200 },
+  experience: { x: -280, y: -180 },
+  projects: { x: 280, y: -180 },
+  research: { x: 280, y: 180 },
+  education: { x: -280, y: 180 },
+  skills: { x: 0, y: -280 },
   resume: { x: 0, y: 300 },
 };
 
@@ -146,6 +147,45 @@ export default function GraphContainer({ onNodeClick, searchTerm }: GraphContain
     return 22;
   }, []);
 
+  // Image cache for node images
+  const [imageCache, setImageCache] = useState<Map<string, HTMLImageElement>>(new Map());
+
+  // Preload images
+  useEffect(() => {
+    const cache = new Map<string, HTMLImageElement>();
+    const imagesToLoad: string[] = [];
+    
+    graphData.nodes.forEach(node => {
+      if (node.image) {
+        imagesToLoad.push(node.image);
+      }
+    });
+
+    let loadedCount = 0;
+    imagesToLoad.forEach(src => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        cache.set(src, img);
+        loadedCount++;
+        if (loadedCount === imagesToLoad.length) {
+          setImageCache(new Map(cache));
+        }
+      };
+      img.onerror = () => {
+        loadedCount++;
+        if (loadedCount === imagesToLoad.length) {
+          setImageCache(new Map(cache));
+        }
+      };
+      img.src = src;
+    });
+
+    if (imagesToLoad.length === 0) {
+      setImageCache(new Map());
+    }
+  }, []);
+
   // Paint node
   const paintNode = useCallback((node: any, ctx: CanvasRenderingContext2D) => {
     const x = node.fx ?? node.x;
@@ -169,19 +209,236 @@ export default function GraphContainer({ onNodeClick, searchTerm }: GraphContain
     const glow = ctx.createRadialGradient(x, y, size * 0.3, x, y, glowRadius);
     glow.addColorStop(0, `${color}${Math.floor(opacity * 0.4 * 255).toString(16).padStart(2, '0')}`);
     glow.addColorStop(1, `${color}00`);
-    ctx.beginPath();
+      ctx.beginPath();
     ctx.arc(x, y, glowRadius, 0, Math.PI * 2);
     ctx.fillStyle = glow;
-    ctx.fill();
+      ctx.fill();
 
     // Main circle
-    ctx.beginPath();
+      ctx.beginPath();
     ctx.arc(x, y, size, 0, Math.PI * 2);
     const grad = ctx.createRadialGradient(x - size * 0.3, y - size * 0.3, 0, x, y, size);
     grad.addColorStop(0, `${color}${Math.floor(opacity * 255).toString(16).padStart(2, '0')}`);
     grad.addColorStop(1, `${color}${Math.floor(opacity * 0.6 * 255).toString(16).padStart(2, '0')}`);
     ctx.fillStyle = grad;
-    ctx.fill();
+      ctx.fill();
+
+    // Draw image for nodes (root, category, or item nodes with images)
+    if (nodeData.image && imageCache.has(nodeData.image)) {
+      const img = imageCache.get(nodeData.image)!;
+      if (img.complete && img.width > 0) {
+        ctx.save();
+        if (nodeData.type === 'root') {
+          ctx.beginPath();
+          ctx.arc(x, y, size * 0.85, 0, Math.PI * 2);
+          ctx.clip();
+          const imgSize = size * 1.7;
+          ctx.drawImage(img, x - imgSize / 2, y - imgSize / 2, imgSize, imgSize);
+        } else {
+          // Larger size for item nodes with images (like NYU logo)
+          const imgSize = nodeData.type === 'item' ? size * 1.0 : size * 0.7;
+          ctx.globalAlpha = opacity;
+          ctx.drawImage(img, x - imgSize / 2, y - imgSize / 2, imgSize, imgSize);
+        }
+        ctx.restore();
+      }
+    } else if (nodeData.icon && (nodeData.type === 'category' || nodeData.type === 'item')) {
+      // Draw icon for other category nodes (experience, projects, skills)
+      ctx.save();
+      ctx.strokeStyle = `rgba(255, 255, 255, ${opacity * 0.9})`;
+      ctx.fillStyle = `rgba(255, 255, 255, ${opacity * 0.9})`;
+      ctx.lineWidth = 2.5;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      
+      const iconSize = size * 0.5;
+      
+      switch (nodeData.icon) {
+        case 'Briefcase': // Experience
+          // Briefcase icon
+          ctx.beginPath();
+          ctx.rect(x - iconSize * 0.6, y - iconSize * 0.3, iconSize * 1.2, iconSize * 0.6);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(x - iconSize * 0.4, y - iconSize * 0.3);
+          ctx.lineTo(x - iconSize * 0.4, y - iconSize * 0.5);
+          ctx.lineTo(x + iconSize * 0.4, y - iconSize * 0.5);
+          ctx.lineTo(x + iconSize * 0.4, y - iconSize * 0.3);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(x, y + iconSize * 0.1, iconSize * 0.15, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+          
+        case 'FolderKanban': // Projects
+          // Folder icon
+          ctx.beginPath();
+          ctx.moveTo(x - iconSize * 0.5, y - iconSize * 0.2);
+          ctx.lineTo(x - iconSize * 0.3, y - iconSize * 0.4);
+          ctx.lineTo(x + iconSize * 0.3, y - iconSize * 0.4);
+          ctx.lineTo(x + iconSize * 0.5, y - iconSize * 0.2);
+          ctx.lineTo(x + iconSize * 0.5, y + iconSize * 0.3);
+          ctx.lineTo(x - iconSize * 0.5, y + iconSize * 0.3);
+          ctx.closePath();
+          ctx.stroke();
+          break;
+          
+        case 'Code': // Skills / Languages
+          // Code brackets icon
+          ctx.beginPath();
+          ctx.moveTo(x - iconSize * 0.4, y - iconSize * 0.2);
+          ctx.lineTo(x - iconSize * 0.6, y);
+          ctx.lineTo(x - iconSize * 0.4, y + iconSize * 0.2);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(x + iconSize * 0.4, y - iconSize * 0.2);
+          ctx.lineTo(x + iconSize * 0.6, y);
+          ctx.lineTo(x + iconSize * 0.4, y + iconSize * 0.2);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(x - iconSize * 0.15, y);
+          ctx.lineTo(x + iconSize * 0.15, y);
+          ctx.stroke();
+          break;
+          
+        case 'BookOpen': // Tutor
+          // Open book icon
+          ctx.beginPath();
+          ctx.arc(x - iconSize * 0.2, y, iconSize * 0.3, -Math.PI / 3, Math.PI / 3);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(x + iconSize * 0.2, y, iconSize * 0.3, Math.PI * 2 / 3, Math.PI * 4 / 3);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(x - iconSize * 0.2, y - iconSize * 0.25);
+          ctx.lineTo(x, y - iconSize * 0.15);
+          ctx.lineTo(x + iconSize * 0.2, y - iconSize * 0.25);
+          ctx.stroke();
+          break;
+          
+        case 'Database': // notSoSimpleDB / Databases
+          // Database cylinder icon
+          ctx.beginPath();
+          ctx.ellipse(x, y - iconSize * 0.2, iconSize * 0.4, iconSize * 0.1, 0, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(x - iconSize * 0.4, y - iconSize * 0.2);
+          ctx.lineTo(x - iconSize * 0.4, y + iconSize * 0.2);
+          ctx.moveTo(x + iconSize * 0.4, y - iconSize * 0.2);
+          ctx.lineTo(x + iconSize * 0.4, y + iconSize * 0.2);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.ellipse(x, y + iconSize * 0.2, iconSize * 0.4, iconSize * 0.1, 0, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.ellipse(x, y, iconSize * 0.4, iconSize * 0.1, 0, 0, Math.PI * 2);
+          ctx.stroke();
+          break;
+          
+        case 'Search': // VoucherFinder
+          // Magnifying glass icon
+          ctx.beginPath();
+          ctx.arc(x, y, iconSize * 0.35, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(x + iconSize * 0.25, y + iconSize * 0.25);
+          ctx.lineTo(x + iconSize * 0.45, y + iconSize * 0.45);
+          ctx.stroke();
+          break;
+          
+        case 'Home': // RentIt
+          // House icon
+          ctx.beginPath();
+          ctx.moveTo(x, y - iconSize * 0.4);
+          ctx.lineTo(x - iconSize * 0.4, y);
+          ctx.lineTo(x - iconSize * 0.4, y + iconSize * 0.3);
+          ctx.lineTo(x + iconSize * 0.4, y + iconSize * 0.3);
+          ctx.lineTo(x + iconSize * 0.4, y);
+          ctx.closePath();
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.rect(x - iconSize * 0.15, y + iconSize * 0.1, iconSize * 0.3, iconSize * 0.2);
+          ctx.stroke();
+          break;
+          
+        case 'Wallet': // Budgetly
+          // Wallet icon
+          ctx.beginPath();
+          ctx.rect(x - iconSize * 0.5, y - iconSize * 0.2, iconSize * 1.0, iconSize * 0.4);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.rect(x - iconSize * 0.5, y - iconSize * 0.2, iconSize * 0.3, iconSize * 0.4);
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(x + iconSize * 0.25, y, iconSize * 0.1, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+          
+        case 'FileText': // ICSE Paper
+          // Document icon
+          ctx.beginPath();
+          ctx.moveTo(x - iconSize * 0.3, y - iconSize * 0.4);
+          ctx.lineTo(x + iconSize * 0.3, y - iconSize * 0.4);
+          ctx.lineTo(x + iconSize * 0.3, y + iconSize * 0.3);
+          ctx.lineTo(x - iconSize * 0.3, y + iconSize * 0.3);
+          ctx.closePath();
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(x - iconSize * 0.2, y - iconSize * 0.2);
+          ctx.lineTo(x + iconSize * 0.2, y - iconSize * 0.2);
+          ctx.moveTo(x - iconSize * 0.2, y);
+          ctx.lineTo(x + iconSize * 0.1, y);
+          ctx.moveTo(x - iconSize * 0.2, y + iconSize * 0.2);
+          ctx.lineTo(x + iconSize * 0.15, y + iconSize * 0.2);
+          ctx.stroke();
+          break;
+          
+        case 'Book': // Qamar
+          // Closed book icon
+          ctx.beginPath();
+          ctx.rect(x - iconSize * 0.4, y - iconSize * 0.3, iconSize * 0.8, iconSize * 0.6);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(x, y - iconSize * 0.3);
+          ctx.lineTo(x, y + iconSize * 0.3);
+          ctx.stroke();
+          break;
+          
+        case 'Server': // Backend & Cloud
+          // Server rack icon
+          ctx.beginPath();
+          ctx.rect(x - iconSize * 0.5, y - iconSize * 0.35, iconSize * 1.0, iconSize * 0.7);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.rect(x - iconSize * 0.4, y - iconSize * 0.25, iconSize * 0.8, iconSize * 0.15);
+          ctx.fill();
+          ctx.beginPath();
+          ctx.rect(x - iconSize * 0.4, y - iconSize * 0.05, iconSize * 0.8, iconSize * 0.15);
+          ctx.fill();
+          ctx.beginPath();
+          ctx.rect(x - iconSize * 0.4, y + iconSize * 0.15, iconSize * 0.8, iconSize * 0.15);
+          ctx.fill();
+          break;
+          
+        case 'Terminal': // Systems & Tools
+          // Terminal window icon
+          ctx.beginPath();
+          ctx.rect(x - iconSize * 0.5, y - iconSize * 0.3, iconSize * 1.0, iconSize * 0.6);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(x - iconSize * 0.35, y - iconSize * 0.15, iconSize * 0.08, 0, Math.PI * 2);
+          ctx.fill();
+        ctx.beginPath();
+          ctx.moveTo(x - iconSize * 0.2, y);
+          ctx.lineTo(x + iconSize * 0.1, y - iconSize * 0.15);
+          ctx.lineTo(x + iconSize * 0.1, y + iconSize * 0.15);
+          ctx.closePath();
+        ctx.fill();
+          break;
+      }
+      
+      ctx.restore();
+    }
 
     // Expandable indicator ring
     if (nodeData.type === 'category' && hasChildren) {
@@ -233,7 +490,7 @@ export default function GraphContainer({ onNodeClick, searchTerm }: GraphContain
       ctx.fillStyle = `rgba(255, 255, 255, ${opacity * 0.4})`;
       ctx.fillText(nodeData.description, x, labelY + fontSize + 6);
     }
-  }, [hoveredNode, expandedCategories, highlightedNodes, getNodeSize]);
+  }, [hoveredNode, expandedCategories, highlightedNodes, getNodeSize, imageCache]);
 
   // Paint link
   const paintLink = useCallback((link: any, ctx: CanvasRenderingContext2D) => {
@@ -267,10 +524,29 @@ export default function GraphContainer({ onNodeClick, searchTerm }: GraphContain
     const graphNode = graphData.nodes.find(n => n.id === node.id);
     if (!graphNode) return;
 
+    // Get node screen position for animation
+    let nodePosition: { x: number; y: number } | null = null;
+    if (graphRef.current && containerRef.current) {
+      const fg = graphRef.current;
+      const containerRect = containerRef.current.getBoundingClientRect();
+      const nodeX = node.fx ?? node.x ?? 0;
+      const nodeY = node.fy ?? node.y ?? 0;
+      
+      // Get graph transform state
+      const zoom = fg.zoom() || 1;
+      
+      // Calculate screen position
+      // The graph centers at (0,0) in graph space, which maps to center of container in screen space
+      const screenX = containerRect.left + containerRect.width / 2 + nodeX * zoom;
+      const screenY = containerRect.top + containerRect.height / 2 + nodeY * zoom;
+      
+      nodePosition = { x: screenX, y: screenY };
+    }
+
     // If root node is clicked, just open detail panel (no view reset)
     if (graphNode.type === 'root') {
       if (graphNode.details) {
-        onNodeClick(graphNode);
+        onNodeClick(graphNode, nodePosition);
       }
       return;
     }
@@ -341,7 +617,7 @@ export default function GraphContainer({ onNodeClick, searchTerm }: GraphContain
 
     // Open detail panel for items
     if (graphNode.details) {
-      onNodeClick(graphNode);
+      onNodeClick(graphNode, nodePosition);
     }
   }, [onNodeClick, expandedCategories, dimensions]);
 

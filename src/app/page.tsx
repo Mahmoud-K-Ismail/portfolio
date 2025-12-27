@@ -11,6 +11,7 @@ import { Github, Linkedin, Mail, MousePointer2, Expand } from 'lucide-react';
 
 export default function Home() {
   const [activeNode, setActiveNode] = useState<GraphNode | null>(null);
+  const [nodePosition, setNodePosition] = useState<{ x: number; y: number } | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [showHint, setShowHint] = useState(false);
@@ -27,8 +28,9 @@ export default function Home() {
     };
   }, []);
 
-  const handleNodeClick = useCallback((node: GraphNode) => {
+  const handleNodeClick = useCallback((node: GraphNode, position?: { x: number; y: number } | null) => {
     setActiveNode(node);
+    setNodePosition(position || null);
     setShowHint(false);
   }, []);
 
@@ -199,7 +201,7 @@ export default function Home() {
       </AnimatePresence>
       
       {/* Detail Panel */}
-      <DetailPanel node={activeNode} onClose={handleClosePanel} />
+      <DetailPanel node={activeNode} position={nodePosition} onClose={handleClosePanel} />
       
       {/* RAG Chat */}
       <RAGChat />
