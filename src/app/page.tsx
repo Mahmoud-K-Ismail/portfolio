@@ -1,19 +1,34 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useCallback, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import GraphContainer from '@/components/GraphContainer';
 import DetailPanel from '@/components/DetailPanel';
 import SearchBar from '@/components/SearchBar';
 import { GraphNode } from '@/lib/graphData';
-import { Github, Linkedin, Mail } from 'lucide-react';
+import { Github, Linkedin, Mail, MousePointer2, Expand } from 'lucide-react';
 
 export default function Home() {
   const [activeNode, setActiveNode] = useState<GraphNode | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [showHint, setShowHint] = useState(false);
+
+  useEffect(() => {
+    const loadTimer = setTimeout(() => setIsLoading(false), 1800);
+    const hintTimer = setTimeout(() => setShowHint(true), 2500);
+    const hideHintTimer = setTimeout(() => setShowHint(false), 12000);
+    
+    return () => {
+      clearTimeout(loadTimer);
+      clearTimeout(hintTimer);
+      clearTimeout(hideHintTimer);
+    };
+  }, []);
 
   const handleNodeClick = useCallback((node: GraphNode) => {
     setActiveNode(node);
+    setShowHint(false);
   }, []);
 
   const handleClosePanel = useCallback(() => {
@@ -26,62 +41,161 @@ export default function Home() {
 
   return (
     <main className="relative w-screen h-screen overflow-hidden bg-[#050505]">
-      {/* Subtle animated background gradient */}
-      <div className="absolute inset-0 animated-gradient opacity-50" />
-      
-      {/* Noise texture overlay */}
-      <div className="noise-overlay" />
-      
-      {/* Search Bar */}
-      <SearchBar value={searchTerm} onChange={handleSearchChange} />
-      
-      {/* Graph Container */}
-      <div className="absolute inset-0">
-        <GraphContainer 
-          onNodeClick={handleNodeClick}
-          searchTerm={searchTerm}
-        />
+      {/* Background gradients */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-950/10 via-transparent to-purple-950/10" />
+        <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-blue-500/[0.03] rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-purple-500/[0.03] rounded-full blur-3xl" />
       </div>
       
-      {/* Title overlay */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5, duration: 0.8 }}
-        className="fixed bottom-6 left-6 z-20 pointer-events-none"
-      >
-        <h1 className="text-3xl md:text-4xl font-bold text-white/90 mb-1">
-          Mahmoud Kassem
-        </h1>
-        <p className="text-white/50 font-mono text-sm">
-          CS & Applied Mathematics • AI/NLP
-        </p>
-      </motion.div>
+      {/* Loading Screen */}
+      <AnimatePresence>
+        {isLoading && (
+          <motion.div
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.6 }}
+            className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#050505]"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="relative"
+            >
+              {/* Rotating rings */}
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}
+                className="absolute -inset-12 border border-white/5 rounded-full"
+              />
+              <motion.div
+                animate={{ rotate: -360 }}
+                transition={{ duration: 15, repeat: Infinity, ease: 'linear' }}
+                className="absolute -inset-20 border border-white/[0.03] rounded-full"
+              />
+              
+              <div className="text-center">
+                <motion.div
+                  animate={{ 
+                    boxShadow: ['0 0 20px rgba(255,255,255,0.1)', '0 0 40px rgba(255,255,255,0.2)', '0 0 20px rgba(255,255,255,0.1)']
+                  }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  className="w-3 h-3 mx-auto mb-6 bg-white rounded-full"
+                />
+                <h1 className="text-xl font-medium text-white mb-1">Mahmoud Kassem</h1>
+                <p className="text-white/30 font-mono text-xs">Initializing...</p>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       
-      {/* Social Links */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.7, duration: 0.8 }}
-        className="fixed bottom-6 right-6 z-20 flex gap-3"
-      >
-        <SocialLink href="https://github.com" icon={<Github size={18} />} label="GitHub" />
-        <SocialLink href="https://linkedin.com" icon={<Linkedin size={18} />} label="LinkedIn" />
-        <SocialLink href="mailto:hello@example.com" icon={<Mail size={18} />} label="Email" />
-      </motion.div>
+      {/* Search Bar */}
+      <AnimatePresence>
+        {!isLoading && (
+          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+            <SearchBar value={searchTerm} onChange={handleSearchChange} />
+          </motion.div>
+        )}
+      </AnimatePresence>
       
-      {/* Instructions hint */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1.5, duration: 1 }}
-        className="fixed bottom-6 left-1/2 -translate-x-1/2 z-20 
-                   text-white/30 text-xs font-mono
-                   bg-white/5 backdrop-blur-sm px-4 py-2 rounded-full
-                   border border-white/10"
-      >
-        Click on nodes to explore • Drag to pan • Scroll to zoom
-      </motion.div>
+      {/* Graph */}
+      <div className="absolute inset-0">
+        <GraphContainer onNodeClick={handleNodeClick} searchTerm={searchTerm} />
+      </div>
+      
+      {/* Hint */}
+      <AnimatePresence>
+        {showHint && !activeNode && !isLoading && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            className="fixed bottom-28 left-1/2 -translate-x-1/2 z-30"
+          >
+            <div className="flex items-center gap-5 px-5 py-3 rounded-2xl bg-white/[0.03] backdrop-blur-xl border border-white/10">
+              <div className="flex items-center gap-2 text-white/40 text-sm">
+                <Expand size={14} className="text-blue-400" />
+                <span>Click categories to expand</span>
+              </div>
+              <div className="w-px h-4 bg-white/10" />
+              <div className="flex items-center gap-2 text-white/40 text-sm">
+                <MousePointer2 size={14} className="text-purple-400" />
+                <span>Click items for details</span>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
+      {/* Name */}
+      <AnimatePresence>
+        {!isLoading && (
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2 }}
+            className="fixed bottom-8 left-8 z-20"
+          >
+            <h1 className="text-4xl font-bold text-white tracking-tight">
+              Mahmoud
+              <span className="block text-white/30">Kassem</span>
+            </h1>
+            <div className="mt-2 flex items-center gap-3 text-white/25 font-mono text-xs">
+              <span>CS & Applied Math</span>
+              <span className="w-1 h-1 rounded-full bg-white/20" />
+              <span>NYU '26</span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
+      {/* Socials */}
+      <AnimatePresence>
+        {!isLoading && (
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3 }}
+            className="fixed bottom-8 right-8 z-20 flex gap-2"
+          >
+            <SocialLink 
+              href="https://github.com/Mahmoud-K-Ismail" 
+              icon={<Github size={18} />} 
+              label="GitHub" 
+            />
+            <SocialLink 
+              href="https://www.linkedin.com/in/mahmoud-Kassem-b02338263/" 
+              icon={<Linkedin size={18} />} 
+              label="LinkedIn" 
+            />
+            <SocialLink 
+              href="mailto:mahmoud.kassem@nyu.edu" 
+              icon={<Mail size={18} />} 
+              label="Email" 
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
+      {/* Legend */}
+      <AnimatePresence>
+        {!isLoading && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="fixed top-8 right-8 z-20 hidden md:block"
+          >
+            <div className="flex flex-col gap-2 px-4 py-3 rounded-xl bg-white/[0.02] border border-white/5">
+              <LegendItem color="#3b82f6" label="Experience" />
+              <LegendItem color="#8b5cf6" label="Projects" />
+              <LegendItem color="#ec4899" label="Research" />
+              <LegendItem color="#10b981" label="Skills" />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       
       {/* Detail Panel */}
       <DetailPanel node={activeNode} onClose={handleClosePanel} />
@@ -89,33 +203,28 @@ export default function Home() {
   );
 }
 
-function SocialLink({ 
-  href, 
-  icon, 
-  label 
-}: { 
-  href: string; 
-  icon: React.ReactNode; 
-  label: string;
-}) {
+function SocialLink({ href, icon, label }: { href: string; icon: React.ReactNode; label: string }) {
   return (
     <motion.a
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      whileHover={{ scale: 1.1, y: -2 }}
+      whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
-      className="
-        p-3 rounded-full
-        bg-white/5 backdrop-blur-sm
-        border border-white/10
-        text-white/50 hover:text-white
-        hover:bg-white/10 hover:border-white/20
-        transition-colors
-      "
+      className="p-3 rounded-xl bg-white/[0.03] border border-white/5 text-white/30 
+                 hover:text-white hover:bg-white/[0.06] hover:border-white/10 transition-all"
       aria-label={label}
     >
       {icon}
     </motion.a>
+  );
+}
+
+function LegendItem({ color, label }: { color: string; label: string }) {
+  return (
+    <div className="flex items-center gap-2">
+      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color, boxShadow: `0 0 6px ${color}50` }} />
+      <span className="text-white/30 text-xs font-mono">{label}</span>
+    </div>
   );
 }

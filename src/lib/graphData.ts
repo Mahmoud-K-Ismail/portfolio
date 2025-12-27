@@ -1,4 +1,4 @@
-// Graph Data Structure for Neural Network Portfolio Visualization
+// Graph Data Structure with your actual resume content
 
 export type NodeType = 'root' | 'category' | 'item' | 'skill';
 
@@ -8,13 +8,16 @@ export interface GraphNode {
   type: NodeType;
   color: string;
   size: number;
+  parentId?: string; // For expand/collapse
   description?: string;
   details?: {
     title: string;
     subtitle?: string;
     period?: string;
+    location?: string;
     bullets: string[];
     technologies?: string[];
+    links?: { label: string; url: string }[];
   };
 }
 
@@ -28,278 +31,380 @@ export interface GraphData {
   links: GraphLink[];
 }
 
-// Color palette
+// Color palette - vibrant and distinct
 const colors = {
   root: '#ffffff',
-  category: '#3b82f6', // Blue
-  item: '#a855f7', // Purple
-  skill: '#22c55e', // Green
-  skillAlt: '#6b7280', // Gray
-};
-
-// Node sizes
-const sizes = {
-  root: 24,
-  category: 16,
-  item: 12,
-  skill: 8,
+  experience: '#3b82f6',    // Blue
+  projects: '#8b5cf6',      // Purple
+  research: '#ec4899',      // Pink
+  education: '#f59e0b',     // Amber
+  skills: '#10b981',        // Emerald
+  item: '#94a3b8',          // Slate
 };
 
 export const graphData: GraphData = {
   nodes: [
-    // Root Node
+    // ═══════════════════════════════════════
+    // ROOT NODE
+    // ═══════════════════════════════════════
     {
       id: 'root',
       name: 'Mahmoud Kassem',
       type: 'root',
       color: colors.root,
-      size: sizes.root,
-      description: 'CS & Applied Mathematics',
+      size: 28,
+      description: 'CS & Applied Math @ NYU',
       details: {
         title: 'Mahmoud Kassem',
         subtitle: 'Computer Science & Applied Mathematics',
+        period: 'Graduating May 2026',
+        location: 'NYU Abu Dhabi',
         bullets: [
-          'Passionate about AI/ML, NLP, and building intelligent systems',
-          'Strong foundation in Applied Mathematics and Algorithm Design',
-          'Experience in full-stack development and research',
-          'Currently exploring the intersection of language models and software engineering',
+          'Building scalable distributed systems and cloud-native applications',
+          'Expertise in Java, Python, and microservices architecture',
+          'Strong foundation in data structures, algorithms, and system design',
+          'GPA: 3.89/4.0 | Major GPA: 3.93/4.0',
+        ],
+        links: [
+          { label: 'GitHub', url: 'https://github.com/Mahmoud-K-Ismail' },
+          { label: 'LinkedIn', url: 'https://www.linkedin.com/in/mahmoud-Kassem-b02338263/' },
         ],
       },
     },
 
-    // Category Nodes
+    // ═══════════════════════════════════════
+    // CATEGORY NODES
+    // ═══════════════════════════════════════
     {
       id: 'experience',
       name: 'Experience',
       type: 'category',
-      color: colors.category,
-      size: sizes.category,
+      color: colors.experience,
+      size: 20,
     },
     {
       id: 'projects',
       name: 'Projects',
       type: 'category',
-      color: colors.category,
-      size: sizes.category,
+      color: colors.projects,
+      size: 20,
     },
     {
       id: 'research',
       name: 'Research',
       type: 'category',
-      color: colors.category,
-      size: sizes.category,
+      color: colors.research,
+      size: 20,
+    },
+    {
+      id: 'skills',
+      name: 'Skills',
+      type: 'category',
+      color: colors.skills,
+      size: 20,
     },
 
-    // Experience Items
+    // ═══════════════════════════════════════
+    // EXPERIENCE ITEMS
+    // ═══════════════════════════════════════
     {
       id: 'monta-ai',
       name: 'Monta AI',
       type: 'item',
-      color: colors.item,
-      size: sizes.item,
+      color: colors.experience,
+      size: 14,
+      parentId: 'experience',
       details: {
         title: 'Monta AI',
-        subtitle: 'Software Engineering Intern',
-        period: 'Summer 2024',
+        subtitle: 'AI Engineer Intern',
+        period: 'Sep 2025 – Present',
+        location: 'San Francisco, CA (Remote)',
         bullets: [
-          'Developed RAG (Retrieval-Augmented Generation) systems for intelligent document processing',
-          'Built scalable pipelines using Azure cloud infrastructure',
-          'Implemented vector embeddings and semantic search capabilities',
-          'Collaborated with ML engineers to optimize model inference',
+          'Engineering production RAG system using FastAPI on Azure to convert complex construction data (BIM models, IFC files) into queryable knowledge bases, reducing document lookup time by 70%',
+          'Developed parsing pipelines using LlamaIndex and Ollama to extract structured logic from technical documents, mitigating hallucination risks in high-stakes compliance contexts',
+          'Implemented comprehensive error handling and monitoring for distributed API endpoints, enabling real-time issue detection across production environments',
         ],
-        technologies: ['Python', 'Azure', 'RAG', 'LangChain', 'Vector DBs'],
+        technologies: ['FastAPI', 'Azure', 'LlamaIndex', 'Ollama', 'RAG', 'Python'],
+        links: [{ label: 'Company', url: 'https://www.monta.ai/' }],
       },
     },
     {
-      id: 'nyu-software-lab',
-      name: 'NYU Software Lab',
+      id: 'sanad-lab',
+      name: 'SANAD Lab',
       type: 'item',
-      color: colors.item,
-      size: sizes.item,
+      color: colors.experience,
+      size: 14,
+      parentId: 'experience',
       details: {
-        title: 'NYU Software Lab',
-        subtitle: 'Research Assistant',
-        period: '2023 - Present',
+        title: 'Software Analysis & Developer Support Lab',
+        subtitle: 'Software Engineering Research Intern',
+        period: 'Apr 2025 – Aug 2025',
+        location: 'NYU Abu Dhabi',
         bullets: [
-          'Researching automated code error generation using GPT-4',
-          'Developing benchmarks for evaluating code understanding in LLMs',
-          'Contributing to papers on semantic errors in programming',
-          'Building tools for software engineering education',
+          'Built automated pipeline using GPT-4 to systematically inject 6 types of semantic errors into code, generating novel dataset of 1,217 labeled samples for ML model evaluation',
+          'Developed UniXcoder-based classifier achieving F1-score of 0.64, outperforming linear baselines by 11.7% and establishing new benchmark for logic-aware code analysis',
+          'Optimized distributed processing across HPC cluster infrastructure, reducing pipeline execution time by 40% through parallelization and memory-efficient batch processing',
         ],
-        technologies: ['Python', 'GPT-4', 'AST Parsing', 'Code Analysis'],
+        technologies: ['GPT-4', 'UniXcoder', 'Python', 'HPC', 'ML'],
+        links: [{ label: 'Lab', url: 'https://sanadlab.org/' }],
       },
     },
     {
       id: 'camel-lab',
       name: 'CAMeL Lab',
       type: 'item',
-      color: colors.item,
-      size: sizes.item,
+      color: colors.experience,
+      size: 14,
+      parentId: 'experience',
       details: {
-        title: 'CAMeL Lab',
-        subtitle: 'NLP Research Assistant',
-        period: '2022 - 2023',
+        title: 'CAMeL Lab – NYU',
+        subtitle: 'Software Developer & NLP Research Assistant',
+        period: 'Mar 2024 – May 2025',
+        location: 'NYU Abu Dhabi',
         bullets: [
-          'Worked on Arabic NLP and morphological analysis systems',
-          'Contributed to state-of-the-art Arabic language processing tools',
-          'Developed annotation pipelines for linguistic data',
-          'Published research on Arabic morphology disambiguation',
+          'Achieved 95% synchronization accuracy across 77,429 tokens by engineering systematic mapping pipeline to align four disparate legacy datasets into unified, machine-readable corpus',
+          'Architected 68-function Python preprocessing library handling specialized character sets, contributed to open-source CAMeL Tools library (500+ global users)',
+          'Designed automated test suites and conducted code reviews, maintaining high code quality standards across the development lifecycle',
         ],
-        technologies: ['Python', 'NLP', 'Arabic Processing', 'PyTorch'],
+        technologies: ['Python', 'NLP', 'Arabic Processing', 'Open Source'],
+        links: [{ label: 'CAMeL Tools', url: 'https://github.com/CAMeL-Lab/camel_tools' }],
+      },
+    },
+    {
+      id: 'tutor',
+      name: 'CS Tutor',
+      type: 'item',
+      color: colors.experience,
+      size: 14,
+      parentId: 'experience',
+      details: {
+        title: 'Unix Lab – NYU',
+        subtitle: 'Computer Science Peer Tutor',
+        period: 'Sep 2023 – Present',
+        location: 'NYU Abu Dhabi',
+        bullets: [
+          'Mentored 50+ students over 300+ hours in data structures, algorithms, and OOP using Java, Python, and C++',
+          'Provided technical guidance on debugging methodologies, complexity analysis, and software engineering best practices',
+        ],
+        technologies: ['Java', 'Python', 'C++', 'Data Structures', 'Algorithms'],
       },
     },
 
-    // Project Items
+    // ═══════════════════════════════════════
+    // PROJECT ITEMS
+    // ═══════════════════════════════════════
     {
       id: 'notsosimpledb',
       name: 'notSoSimpleDB',
       type: 'item',
-      color: colors.item,
-      size: sizes.item,
+      color: colors.projects,
+      size: 14,
+      parentId: 'projects',
       details: {
         title: 'notSoSimpleDB',
-        subtitle: 'Database Engine from Scratch',
+        subtitle: 'Custom Database System',
         bullets: [
-          'Built a fully functional database engine in Java',
-          'Implemented B+ tree indexing for efficient queries',
-          'Developed SQL parser and query optimizer',
-          'Created buffer pool management and transaction logging',
+          'Implemented core database internals from scratch: storage management, B-tree indexing, query optimization, transaction handling (ACID), and concurrency control with lock management',
+          'Applied advanced data structures for efficient query processing, achieving sub-linear lookup times through carefully designed index structures',
         ],
-        technologies: ['Java', 'Data Structures', 'SQL', 'B+ Trees'],
+        technologies: ['Java', 'B-Trees', 'ACID', 'Query Optimization'],
+        links: [{ label: 'GitHub', url: 'https://github.com/mehermdsaad/notSoSimpleDB' }],
       },
     },
     {
       id: 'navi',
       name: 'Navi',
       type: 'item',
-      color: colors.item,
-      size: sizes.item,
+      color: colors.projects,
+      size: 14,
+      parentId: 'projects',
       details: {
         title: 'Navi',
-        subtitle: 'AI Navigation Assistant',
+        subtitle: 'AI-Powered Computer Navigation Assistant',
         bullets: [
-          'Developed an intelligent navigation assistant using LLMs',
-          'Integrated real-time location services and mapping APIs',
-          'Built natural language interface for route queries',
-          'Implemented context-aware recommendations',
+          'Built multimodal AI tool at HackHarvard 2025 integrating Gemini Vision for real-time screenshot analysis, ElevenLabs TTS, and Porcupine wake-word detection for hands-free operation',
+          'Engineered multi-turn conversational system providing step-by-step voice guidance, designed for elderly users navigating computer interfaces',
         ],
-        technologies: ['Python', 'LLMs', 'APIs', 'React Native'],
+        technologies: ['Python', 'Gemini AI', 'ElevenLabs', 'Computer Vision'],
+        links: [{ label: 'GitHub', url: 'https://github.com/Mahmoud-K-Ismail/Navi' }],
       },
     },
     {
-      id: 'voucher-finder',
-      name: 'Voucher Finder',
+      id: 'voucherfinder',
+      name: 'VoucherFinder',
       type: 'item',
-      color: colors.item,
-      size: sizes.item,
+      color: colors.projects,
+      size: 14,
+      parentId: 'projects',
       details: {
-        title: 'Voucher Finder',
-        subtitle: 'Full Stack Web Application',
+        title: 'VoucherFinder',
+        subtitle: 'AI-Powered Discount Aggregator',
         bullets: [
-          'Built end-to-end web application for discovering deals',
-          'Implemented web scraping and data aggregation pipelines',
-          'Designed responsive UI with modern frameworks',
-          'Deployed with CI/CD and cloud infrastructure',
+          'Led team of 3 through complete SDLC, delivering 2K+ LOC production application with JWT authentication, rate limiting, and comprehensive error handling',
+          'Designed normalized database schema with optimized queries and indexing strategies, reducing average query latency by 60%',
         ],
-        technologies: ['React', 'Node.js', 'PostgreSQL', 'AWS'],
+        technologies: ['Python', 'Flask', 'React', 'TypeScript', 'SQLite'],
+        links: [{ label: 'GitHub', url: 'https://github.com/Mahmoud-K-Ismail/VoucherFinder' }],
+      },
+    },
+    {
+      id: 'rentit',
+      name: 'RentIt',
+      type: 'item',
+      color: colors.projects,
+      size: 14,
+      parentId: 'projects',
+      details: {
+        title: 'RentIt',
+        subtitle: 'Community Rental Platform',
+        bullets: [
+          'Architected full-stack application as Product Owner, implementing secure authentication, transaction handling, and real-time WebSocket features with 90%+ test coverage',
+          'Designed NoSQL schema with complex aggregation pipelines, implementing proper indexing for high-performance data retrieval at scale',
+          'Integrated external APIs with retry mechanisms, circuit breakers, and graceful degradation to ensure fault tolerance',
+        ],
+        technologies: ['JavaScript', 'MongoDB', 'Node.js', 'Express', 'React'],
+        links: [{ label: 'GitHub', url: 'https://github.com/RentIt-A-Community-Rental-Platform/The-Website' }],
+      },
+    },
+    {
+      id: 'budgetly',
+      name: 'Budgetly',
+      type: 'item',
+      color: colors.projects,
+      size: 14,
+      parentId: 'projects',
+      details: {
+        title: 'Budgetly',
+        subtitle: 'Financial Management Platform',
+        bullets: [
+          'Built RESTful backend with relational database management, input validation, and automated testing demonstrating SOLID principles',
+          'Implemented structured logging and health checks for production monitoring and troubleshooting',
+        ],
+        technologies: ['Python', 'FastAPI', 'SQLAlchemy', 'SQLite'],
+        links: [{ label: 'GitHub', url: 'https://github.com/Mahmoud-K-Ismail/Budgetly' }],
       },
     },
 
-    // Research Items
+    // ═══════════════════════════════════════
+    // RESEARCH ITEMS
+    // ═══════════════════════════════════════
     {
-      id: 'icse-2026',
-      name: 'ICSE 2026 Paper',
+      id: 'icse-paper',
+      name: 'ICSE 2026',
       type: 'item',
-      color: colors.item,
-      size: sizes.item,
+      color: colors.research,
+      size: 14,
+      parentId: 'research',
       details: {
-        title: 'ICSE 2026 Paper',
-        subtitle: 'Semantic Errors in Code',
-        period: 'Submitted 2025',
+        title: 'ICSE 2026 Publication',
+        subtitle: 'LLM4Code Workshop – Accepted',
         bullets: [
-          'Investigating semantic errors in programming education',
-          'Developing automated error injection techniques',
-          'Creating benchmarks for code understanding evaluation',
-          'Analyzing LLM capabilities in error detection',
+          '"An Automated Methodology for Generating Labeled Datasets of Semantic Errors in Code"',
+          'Authors: Kassem, M., Ribeiro, F., & Nadi, S.',
+          'Presented at the International Conference on Software Engineering (ICSE), Workshop on Large Language Models for Code',
+          'Received $1,500 Conference Grant to present',
         ],
-        technologies: ['Research', 'Python', 'LLMs', 'Code Analysis'],
+        technologies: ['Research', 'LLMs', 'Code Analysis', 'ML'],
       },
     },
     {
       id: 'qamar',
       name: 'Qamar',
       type: 'item',
-      color: colors.item,
-      size: sizes.item,
+      color: colors.research,
+      size: 14,
+      parentId: 'research',
       details: {
         title: 'Qamar',
-        subtitle: 'Quranic Annotation Project',
+        subtitle: 'Quranic Morpho-syntactic Annotation Resource',
         bullets: [
-          'Developing comprehensive Quranic text annotation system',
-          'Building morphological and syntactic analysis tools',
-          'Creating accessible interfaces for scholarly research',
-          'Contributing to Arabic NLP resources',
+          'Co-authoring paper on comprehensive Quranic text annotation system (In Preparation)',
+          'Authors: Saeed, M., Kassem, M., Amjed, M., Habash, N., & Bondok, R.',
+          'Building morphological and syntactic analysis tools for Arabic NLP',
         ],
-        technologies: ['Python', 'NLP', 'Arabic', 'Annotation'],
+        technologies: ['NLP', 'Arabic', 'Annotation', 'Linguistics'],
       },
     },
 
-    // Skill Nodes
+    // ═══════════════════════════════════════
+    // SKILL ITEMS
+    // ═══════════════════════════════════════
     {
-      id: 'python',
-      name: 'Python',
-      type: 'skill',
-      color: colors.skill,
-      size: sizes.skill,
+      id: 'languages',
+      name: 'Languages',
+      type: 'item',
+      color: colors.skills,
+      size: 14,
+      parentId: 'skills',
+      details: {
+        title: 'Programming Languages',
+        bullets: [
+          'Java – Primary language for systems programming',
+          'Python – ML, scripting, backend development',
+          'C/C++ – Systems and performance-critical code',
+          'JavaScript/TypeScript – Full-stack web development',
+          'SQL – Database queries and optimization',
+          'Bash/Shell – Scripting and automation',
+        ],
+        technologies: ['Java', 'Python', 'C++', 'JavaScript', 'TypeScript', 'SQL'],
+      },
     },
     {
-      id: 'java',
-      name: 'Java',
-      type: 'skill',
-      color: colors.skill,
-      size: sizes.skill,
+      id: 'backend',
+      name: 'Backend & Cloud',
+      type: 'item',
+      color: colors.skills,
+      size: 14,
+      parentId: 'skills',
+      details: {
+        title: 'Backend & Cloud',
+        bullets: [
+          'FastAPI, Node.js/Express for REST API development',
+          'Microservices architecture and distributed systems',
+          'Docker containerization and orchestration',
+          'Azure cloud services and deployment',
+          'CI/CD pipelines and automation',
+        ],
+        technologies: ['FastAPI', 'Node.js', 'Docker', 'Azure', 'CI/CD'],
+      },
     },
     {
-      id: 'react',
-      name: 'React',
-      type: 'skill',
-      color: colors.skill,
-      size: sizes.skill,
+      id: 'databases',
+      name: 'Databases',
+      type: 'item',
+      color: colors.skills,
+      size: 14,
+      parentId: 'skills',
+      details: {
+        title: 'Database Technologies',
+        bullets: [
+          'Relational: MySQL, PostgreSQL, SQLite',
+          'NoSQL: MongoDB',
+          'ORM: SQLAlchemy',
+          'Query optimization and indexing strategies',
+          'Database design and normalization',
+        ],
+        technologies: ['MySQL', 'PostgreSQL', 'MongoDB', 'SQLAlchemy'],
+      },
     },
     {
-      id: 'nlp',
-      name: 'NLP',
-      type: 'skill',
-      color: colors.skill,
-      size: sizes.skill,
-    },
-    {
-      id: 'azure',
-      name: 'Azure',
-      type: 'skill',
-      color: colors.skillAlt,
-      size: sizes.skill,
-    },
-    {
-      id: 'llms',
-      name: 'LLMs',
-      type: 'skill',
-      color: colors.skill,
-      size: sizes.skill,
-    },
-    {
-      id: 'sql',
-      name: 'SQL',
-      type: 'skill',
-      color: colors.skillAlt,
-      size: sizes.skill,
-    },
-    {
-      id: 'nodejs',
-      name: 'Node.js',
-      type: 'skill',
-      color: colors.skill,
-      size: sizes.skill,
+      id: 'systems',
+      name: 'Systems & Tools',
+      type: 'item',
+      color: colors.skills,
+      size: 14,
+      parentId: 'skills',
+      details: {
+        title: 'Systems & Tools',
+        bullets: [
+          'Linux/Unix system administration',
+          'Git/GitHub version control',
+          'Distributed systems design',
+          'HPC cluster computing',
+          'Performance profiling and optimization',
+        ],
+        technologies: ['Linux', 'Git', 'HPC', 'Distributed Systems'],
+      },
     },
   ],
 
@@ -308,83 +413,60 @@ export const graphData: GraphData = {
     { source: 'root', target: 'experience' },
     { source: 'root', target: 'projects' },
     { source: 'root', target: 'research' },
+    { source: 'root', target: 'skills' },
 
-    // Experience to Items
+    // Experience connections
     { source: 'experience', target: 'monta-ai' },
-    { source: 'experience', target: 'nyu-software-lab' },
+    { source: 'experience', target: 'sanad-lab' },
     { source: 'experience', target: 'camel-lab' },
+    { source: 'experience', target: 'tutor' },
 
-    // Projects to Items
+    // Projects connections
     { source: 'projects', target: 'notsosimpledb' },
     { source: 'projects', target: 'navi' },
-    { source: 'projects', target: 'voucher-finder' },
+    { source: 'projects', target: 'voucherfinder' },
+    { source: 'projects', target: 'rentit' },
+    { source: 'projects', target: 'budgetly' },
 
-    // Research to Items
-    { source: 'research', target: 'icse-2026' },
+    // Research connections
+    { source: 'research', target: 'icse-paper' },
     { source: 'research', target: 'qamar' },
 
-    // Skills connections (creating the neural network effect)
-    { source: 'monta-ai', target: 'python' },
-    { source: 'monta-ai', target: 'azure' },
-    { source: 'monta-ai', target: 'llms' },
-
-    { source: 'nyu-software-lab', target: 'python' },
-    { source: 'nyu-software-lab', target: 'llms' },
-
-    { source: 'camel-lab', target: 'python' },
-    { source: 'camel-lab', target: 'nlp' },
-
-    { source: 'notsosimpledb', target: 'java' },
-    { source: 'notsosimpledb', target: 'sql' },
-
-    { source: 'navi', target: 'python' },
-    { source: 'navi', target: 'llms' },
-    { source: 'navi', target: 'react' },
-
-    { source: 'voucher-finder', target: 'react' },
-    { source: 'voucher-finder', target: 'nodejs' },
-    { source: 'voucher-finder', target: 'sql' },
-
-    { source: 'icse-2026', target: 'python' },
-    { source: 'icse-2026', target: 'llms' },
-
-    { source: 'qamar', target: 'python' },
-    { source: 'qamar', target: 'nlp' },
-
-    // Cross-connections between skills (neural network effect)
-    { source: 'python', target: 'nlp' },
-    { source: 'python', target: 'llms' },
-    { source: 'react', target: 'nodejs' },
-    { source: 'llms', target: 'nlp' },
+    // Skills connections
+    { source: 'skills', target: 'languages' },
+    { source: 'skills', target: 'backend' },
+    { source: 'skills', target: 'databases' },
+    { source: 'skills', target: 'systems' },
   ],
 };
 
-// Helper function to get connected nodes
-export function getConnectedNodes(nodeId: string): string[] {
-  const connected = new Set<string>();
-  
-  graphData.links.forEach(link => {
-    if (link.source === nodeId) {
-      connected.add(link.target);
-    }
-    if (link.target === nodeId) {
-      connected.add(link.source);
-    }
-  });
-  
-  return Array.from(connected);
+// Get child nodes of a category
+export function getChildNodes(categoryId: string): GraphNode[] {
+  return graphData.nodes.filter(node => node.parentId === categoryId);
 }
 
-// Helper function to filter nodes by search term
+// Get category nodes only
+export function getCategoryNodes(): GraphNode[] {
+  return graphData.nodes.filter(node => node.type === 'category');
+}
+
+// Filter nodes by search term
 export function filterNodesBySearch(searchTerm: string): Set<string> {
   const matchingNodes = new Set<string>();
   const term = searchTerm.toLowerCase();
   
   graphData.nodes.forEach(node => {
-    if (node.name.toLowerCase().includes(term)) {
+    const nameMatch = node.name.toLowerCase().includes(term);
+    const techMatch = node.details?.technologies?.some(t => 
+      t.toLowerCase().includes(term)
+    );
+    
+    if (nameMatch || techMatch) {
       matchingNodes.add(node.id);
-      // Add connected nodes
-      getConnectedNodes(node.id).forEach(id => matchingNodes.add(id));
+      // Add parent
+      if (node.parentId) matchingNodes.add(node.parentId);
+      // Add root
+      matchingNodes.add('root');
     }
   });
   

@@ -4,14 +4,9 @@ import { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import { graphData, GraphNode, filterNodesBySearch } from '@/lib/graphData';
 
-// Dynamically import ForceGraph2D to avoid SSR issues
 const ForceGraph2D = dynamic(() => import('react-force-graph-2d'), {
   ssr: false,
-  loading: () => (
-    <div className="flex items-center justify-center h-full">
-      <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-    </div>
-  ),
+  loading: () => null,
 });
 
 interface GraphContainerProps {
@@ -19,20 +14,89 @@ interface GraphContainerProps {
   searchTerm: string;
 }
 
+// Pre-calculate positions for categories around the root
+const CATEGORY_POSITIONS: Record<string, { x: number; y: number }> = {
+  root: { x: 0, y: 0 },
+  experience: { x: -300, y: -200 },
+  projects: { x: 300, y: -200 },
+  research: { x: 300, y: 200 },
+  skills: { x: -300, y: 200 },
+};
+
+// Child positions relative to parent (fan out)
+const getChildPosition = (parentId: string, index: number, total: number) => {
+  const parent = CATEGORY_POSITIONS[parentId] || { x: 0, y: 0 };
+  const angleStart = parentId === 'experience' ? Math.PI : 0;
+  const angleSpread = Math.PI * 0.6;
+  const angle = angleStart + (index / Math.max(total - 1, 1) - 0.5) * angleSpread;
+  const distance = 180;
+  
+  return {
+    x: parent.x + Math.cos(angle) * distance,
+    y: parent.y + Math.sin(angle) * distance,
+  };
+};
+
 export default function GraphContainer({ onNodeClick, searchTerm }: GraphContainerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const graphRef = useRef<any>(null);
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
   const [isReady, setIsReady] = useState(false);
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
-  // Filter nodes based on search
+  // Filter by search
   const highlightedNodes = useMemo(() => {
     if (!searchTerm.trim()) return null;
     return filterNodesBySearch(searchTerm);
   }, [searchTerm]);
 
-  // Handle window resize
+  // Build visible graph with pre-calculated positions
+  const visibleGraphData = useMemo(() => {
+    const visibleNodeIds = new Set<string>();
+    
+    // Always show root and categories
+    visibleNodeIds.add('root');
+    graphData.nodes
+      .filter(n => n.type === 'category')
+      .forEach(n => visibleNodeIds.add(n.id));
+    
+    // Show children of expanded categories
+    expandedCategories.forEach(catId => {
+      graphData.nodes
+        .filter(n => n.parentId === catId)
+        .forEach(n => visibleNodeIds.add(n.id));
+    });
+
+    // Build nodes with initial positions
+    const visibleNodes = graphData.nodes
+      .filter(n => visibleNodeIds.has(n.id))
+      .map((n, _, arr) => {
+        // Set initial position
+        let pos = CATEGORY_POSITIONS[n.id];
+        
+        if (!pos && n.parentId) {
+          // Child node - position relative to parent
+          const siblings = arr.filter(s => s.parentId === n.parentId);
+          const index = siblings.findIndex(s => s.id === n.id);
+          pos = getChildPosition(n.parentId, index, siblings.length);
+        }
+        
+        return {
+          ...n,
+          fx: pos?.x, // Fixed x position initially
+          fy: pos?.y, // Fixed y position initially
+        };
+      });
+    
+    const visibleLinks = graphData.links
+      .filter(l => visibleNodeIds.has(l.source as string) && visibleNodeIds.has(l.target as string))
+      .map(l => ({ source: l.source, target: l.target }));
+
+    return { nodes: visibleNodes, links: visibleLinks };
+  }, [expandedCategories]);
+
+  // Window resize
   useEffect(() => {
     const updateDimensions = () => {
       if (containerRef.current) {
@@ -42,181 +106,224 @@ export default function GraphContainer({ onNodeClick, searchTerm }: GraphContain
         });
       }
     };
-
     updateDimensions();
     window.addEventListener('resize', updateDimensions);
-    
-    // Set ready state after a short delay
     const timer = setTimeout(() => setIsReady(true), 100);
-    
     return () => {
       window.removeEventListener('resize', updateDimensions);
       clearTimeout(timer);
     };
   }, []);
 
-  // Center graph on root node after initial render
+  // Configure forces
   useEffect(() => {
     if (graphRef.current && isReady) {
-      // Initial zoom and center
+      const fg = graphRef.current;
+      
+      // Disable forces since we're using fixed positions
+      fg.d3Force('charge')?.strength(0);
+      fg.d3Force('center', null);
+      fg.d3Force('link')?.strength(0);
+      
       setTimeout(() => {
-        graphRef.current?.zoomToFit(400, 50);
-      }, 500);
+        fg.zoomToFit(400, 120);
+      }, 300);
     }
-  }, [isReady]);
+  }, [isReady, visibleGraphData]);
 
-  // Custom node rendering with glow effect
-  const paintNode = useCallback((node: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
+  // Node sizes
+  const getNodeSize = useCallback((node: GraphNode) => {
+    if (node.type === 'root') return 45;
+    if (node.type === 'category') return 35;
+    return 22;
+  }, []);
+
+  // Paint node
+  const paintNode = useCallback((node: any, ctx: CanvasRenderingContext2D) => {
+    const x = node.fx ?? node.x;
+    const y = node.fy ?? node.y;
+    if (!isFinite(x) || !isFinite(y)) return;
+    
     const nodeData = node as GraphNode;
     const isHovered = hoveredNode === node.id;
-    const isHighlighted = highlightedNodes === null || highlightedNodes.has(node.id);
-    const baseSize = nodeData.size || 8;
-    const size = isHovered ? baseSize * 1.5 : baseSize;
+    const isExpanded = expandedCategories.has(node.id);
+    const hasChildren = graphData.nodes.some(n => n.parentId === node.id);
+    const isHighlighted = !highlightedNodes || highlightedNodes.has(node.id);
     
-    // Determine opacity based on search filter
     const opacity = highlightedNodes && !isHighlighted ? 0.15 : 1;
-    
-    // Draw glow effect
-    const glowSize = isHovered ? 4 : 2;
-    const gradient = ctx.createRadialGradient(
-      node.x, node.y, 0,
-      node.x, node.y, size + glowSize * 3
-    );
-    
     const color = nodeData.color || '#ffffff';
-    gradient.addColorStop(0, `${color}${Math.floor(opacity * 255).toString(16).padStart(2, '0')}`);
-    gradient.addColorStop(0.5, `${color}${Math.floor(opacity * 0.4 * 255).toString(16).padStart(2, '0')}`);
-    gradient.addColorStop(1, `${color}00`);
     
+    let size = getNodeSize(nodeData);
+    if (isHovered) size *= 1.1;
+    
+    // Outer glow
+    const glowRadius = size * 2;
+    const glow = ctx.createRadialGradient(x, y, size * 0.3, x, y, glowRadius);
+    glow.addColorStop(0, `${color}${Math.floor(opacity * 0.4 * 255).toString(16).padStart(2, '0')}`);
+    glow.addColorStop(1, `${color}00`);
     ctx.beginPath();
-    ctx.arc(node.x, node.y, size + glowSize * 3, 0, 2 * Math.PI);
-    ctx.fillStyle = gradient;
+    ctx.arc(x, y, glowRadius, 0, Math.PI * 2);
+    ctx.fillStyle = glow;
     ctx.fill();
-    
-    // Draw main node
+
+    // Main circle
     ctx.beginPath();
-    ctx.arc(node.x, node.y, size, 0, 2 * Math.PI);
-    ctx.fillStyle = `${color}${Math.floor(opacity * 255).toString(16).padStart(2, '0')}`;
+    ctx.arc(x, y, size, 0, Math.PI * 2);
+    const grad = ctx.createRadialGradient(x - size * 0.3, y - size * 0.3, 0, x, y, size);
+    grad.addColorStop(0, `${color}${Math.floor(opacity * 255).toString(16).padStart(2, '0')}`);
+    grad.addColorStop(1, `${color}${Math.floor(opacity * 0.6 * 255).toString(16).padStart(2, '0')}`);
+    ctx.fillStyle = grad;
     ctx.fill();
-    
-    // Draw label for larger nodes or when hovered
-    if (globalScale > 0.5 || isHovered || nodeData.type === 'root' || nodeData.type === 'category') {
-      const label = nodeData.name;
-      const fontSize = Math.max(12 / globalScale, isHovered ? 14 : 10);
-      ctx.font = `${isHovered ? 'bold' : 'normal'} ${fontSize}px 'Space Mono', monospace`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      
-      // Text background for readability
-      const textWidth = ctx.measureText(label).width;
-      const padding = 4 / globalScale;
-      
-      ctx.fillStyle = `rgba(5, 5, 5, ${opacity * 0.8})`;
-      ctx.fillRect(
-        node.x - textWidth / 2 - padding,
-        node.y + size + 8 / globalScale - fontSize / 2 - padding / 2,
-        textWidth + padding * 2,
-        fontSize + padding
-      );
-      
-      // Draw text
-      ctx.fillStyle = `rgba(255, 255, 255, ${opacity * 0.9})`;
-      ctx.fillText(label, node.x, node.y + size + 8 / globalScale);
+
+    // Expandable indicator ring
+    if (nodeData.type === 'category' && hasChildren) {
+      ctx.beginPath();
+      ctx.arc(x, y, size + 8, 0, Math.PI * 2);
+      ctx.strokeStyle = `${color}${Math.floor(opacity * (isExpanded ? 0.8 : 0.3) * 255).toString(16).padStart(2, '0')}`;
+      ctx.lineWidth = 2;
+      ctx.setLineDash(isExpanded ? [] : [8, 5]);
+      ctx.stroke();
+      ctx.setLineDash([]);
     }
-  }, [hoveredNode, highlightedNodes]);
 
-  // Custom link rendering
-  const paintLink = useCallback((link: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
-    const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
-    const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+    // Hover effect
+    if (isHovered) {
+      ctx.beginPath();
+      ctx.arc(x, y, size + 12, 0, Math.PI * 2);
+      ctx.strokeStyle = `${color}50`;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+
+    // Label
+    const fontSize = nodeData.type === 'root' ? 18 : nodeData.type === 'category' ? 15 : 13;
+    ctx.font = `600 ${fontSize}px "Outfit", system-ui, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
     
-    const isHighlighted = highlightedNodes === null || 
-      (highlightedNodes.has(sourceId) && highlightedNodes.has(targetId));
+    const label = nodeData.name;
+    const labelY = y + size + fontSize + 10;
     
-    const sourceNode = typeof link.source === 'object' ? link.source : null;
-    const targetNode = typeof link.target === 'object' ? link.target : null;
+    // Background pill
+    const metrics = ctx.measureText(label);
+    const padX = 12, padY = 6;
+    const pillW = metrics.width + padX * 2;
+    const pillH = fontSize + padY * 2;
     
-    if (!sourceNode || !targetNode) return;
+    ctx.fillStyle = `rgba(5, 5, 5, ${opacity * 0.92})`;
+    ctx.beginPath();
+    ctx.roundRect(x - pillW / 2, labelY - pillH / 2, pillW, pillH, pillH / 2);
+    ctx.fill();
     
-    const opacity = isHighlighted ? 0.3 : 0.05;
+    // Text
+    ctx.fillStyle = `rgba(255, 255, 255, ${opacity * 0.95})`;
+    ctx.fillText(label, x, labelY);
     
-    // Create gradient for link
-    const gradient = ctx.createLinearGradient(
-      sourceNode.x, sourceNode.y,
-      targetNode.x, targetNode.y
-    );
+    // Subtitle for root
+    if (nodeData.type === 'root' && nodeData.description) {
+      ctx.font = `400 11px "Space Mono", monospace`;
+      ctx.fillStyle = `rgba(255, 255, 255, ${opacity * 0.4})`;
+      ctx.fillText(nodeData.description, x, labelY + fontSize + 6);
+    }
+  }, [hoveredNode, expandedCategories, highlightedNodes, getNodeSize]);
+
+  // Paint link
+  const paintLink = useCallback((link: any, ctx: CanvasRenderingContext2D) => {
+    const source = link.source;
+    const target = link.target;
     
-    const sourceColor = sourceNode.color || '#ffffff';
-    const targetColor = targetNode.color || '#ffffff';
+    const sx = source.fx ?? source.x;
+    const sy = source.fy ?? source.y;
+    const tx = target.fx ?? target.x;
+    const ty = target.fy ?? target.y;
     
-    gradient.addColorStop(0, `${sourceColor}${Math.floor(opacity * 255).toString(16).padStart(2, '0')}`);
-    gradient.addColorStop(1, `${targetColor}${Math.floor(opacity * 255).toString(16).padStart(2, '0')}`);
+    if (!isFinite(sx) || !isFinite(sy) || !isFinite(tx) || !isFinite(ty)) return;
+    
+    const isHoverConnected = hoveredNode && (source.id === hoveredNode || target.id === hoveredNode);
+    const opacity = isHoverConnected ? 0.6 : 0.2;
+    
+    const grad = ctx.createLinearGradient(sx, sy, tx, ty);
+    grad.addColorStop(0, `${source.color || '#fff'}${Math.floor(opacity * 255).toString(16).padStart(2, '0')}`);
+    grad.addColorStop(1, `${target.color || '#fff'}${Math.floor(opacity * 255).toString(16).padStart(2, '0')}`);
     
     ctx.beginPath();
-    ctx.moveTo(sourceNode.x, sourceNode.y);
-    ctx.lineTo(targetNode.x, targetNode.y);
-    ctx.strokeStyle = gradient;
-    ctx.lineWidth = 1 / globalScale;
+    ctx.moveTo(sx, sy);
+    ctx.lineTo(tx, ty);
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = isHoverConnected ? 3 : 1.5;
     ctx.stroke();
-  }, [highlightedNodes]);
+  }, [hoveredNode]);
 
+  // Handle click
   const handleNodeClick = useCallback((node: any) => {
     const graphNode = graphData.nodes.find(n => n.id === node.id);
-    if (graphNode && graphNode.details) {
-      onNodeClick(graphNode);
+    if (!graphNode) return;
+
+    // If it's a category with children, toggle expand
+    const hasChildren = graphData.nodes.some(n => n.parentId === node.id);
+    if (graphNode.type === 'category' && hasChildren) {
+      setExpandedCategories(prev => {
+        const next = new Set(prev);
+        if (next.has(node.id)) {
+          next.delete(node.id);
+        } else {
+          next.add(node.id);
+        }
+        return next;
+      });
+      
+      // Refit view after expand
+      setTimeout(() => {
+        graphRef.current?.zoomToFit(400, 80);
+      }, 100);
+      return;
     }
-    
-    // Zoom to the clicked node
-    if (graphRef.current) {
-      graphRef.current.centerAt(node.x, node.y, 500);
-      graphRef.current.zoom(2, 500);
+
+    // Open detail panel for items
+    if (graphNode.details) {
+      onNodeClick(graphNode);
     }
   }, [onNodeClick]);
 
   const handleNodeHover = useCallback((node: any) => {
     setHoveredNode(node?.id || null);
-    
-    // Change cursor style
     if (containerRef.current) {
       containerRef.current.style.cursor = node ? 'pointer' : 'grab';
     }
   }, []);
 
+  // Larger click area
+  const nodePointerAreaPaint = useCallback((node: any, color: string, ctx: CanvasRenderingContext2D) => {
+    const x = node.fx ?? node.x;
+    const y = node.fy ?? node.y;
+    const size = getNodeSize(node as GraphNode);
+    ctx.beginPath();
+    ctx.arc(x, y, size + 20, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+  }, [getNodeSize]);
+
   return (
-    <div 
-      ref={containerRef} 
-      className="w-full h-full"
-      style={{ cursor: 'grab' }}
-    >
+    <div ref={containerRef} className="w-full h-full" style={{ cursor: 'grab' }}>
       {isReady && (
         <ForceGraph2D
           ref={graphRef}
           width={dimensions.width}
           height={dimensions.height}
-          graphData={graphData}
+          graphData={visibleGraphData}
           nodeCanvasObject={paintNode}
+          nodePointerAreaPaint={nodePointerAreaPaint}
           linkCanvasObject={paintLink}
           onNodeClick={handleNodeClick}
           onNodeHover={handleNodeHover}
           nodeRelSize={1}
-          linkWidth={1}
-          linkColor={() => 'transparent'}
-          backgroundColor="#050505"
-          enableNodeDrag={true}
+          backgroundColor="transparent"
+          enableNodeDrag={false}
           enableZoomInteraction={true}
           enablePanInteraction={true}
-          minZoom={0.5}
-          maxZoom={8}
-          cooldownTicks={100}
-          d3AlphaDecay={0.01}
-          d3VelocityDecay={0.3}
-          warmupTicks={50}
-          onEngineStop={() => {
-            // Add subtle continuous movement
-            if (graphRef.current) {
-              graphRef.current.d3Force('charge')?.strength(-150);
-            }
-          }}
+          minZoom={0.3}
+          maxZoom={3}
+          cooldownTicks={0}
         />
       )}
     </div>

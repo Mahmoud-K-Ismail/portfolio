@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, X } from 'lucide-react';
+import { Search, X, Sparkles } from 'lucide-react';
 
 interface SearchBarProps {
   value: string;
@@ -13,12 +13,10 @@ export default function SearchBar({ value, onChange }: SearchBarProps) {
   const [isFocused, setIsFocused] = useState(false);
   const [localValue, setLocalValue] = useState(value);
 
-  // Debounce the search
   useEffect(() => {
     const timer = setTimeout(() => {
       onChange(localValue);
-    }, 150);
-
+    }, 100);
     return () => clearTimeout(timer);
   }, [localValue, onChange]);
 
@@ -27,30 +25,31 @@ export default function SearchBar({ value, onChange }: SearchBarProps) {
     onChange('');
   };
 
+  const suggestions = ['Python', 'LLMs', 'Research', 'NLP'];
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.3, duration: 0.5 }}
-      className="fixed top-6 left-6 z-30"
-    >
-      <div 
+    <div className="fixed top-8 left-8 z-30">
+      <motion.div
+        initial={false}
+        animate={{
+          width: isFocused ? 320 : 240,
+        }}
         className={`
-          relative flex items-center gap-2
-          bg-white/5 backdrop-blur-xl
-          border rounded-full
+          relative flex items-center
+          bg-white/[0.03] backdrop-blur-xl
+          border rounded-2xl
           transition-all duration-300
           ${isFocused 
-            ? 'border-white/30 shadow-lg shadow-white/5 w-72' 
-            : 'border-white/10 w-56 hover:border-white/20'
+            ? 'border-white/20 shadow-lg shadow-black/20' 
+            : 'border-white/5 hover:border-white/10'
           }
         `}
       >
         <Search 
-          size={16} 
+          size={18} 
           className={`
             ml-4 flex-shrink-0 transition-colors duration-200
-            ${isFocused ? 'text-white/70' : 'text-white/40'}
+            ${isFocused ? 'text-white/60' : 'text-white/30'}
           `}
         />
         <input
@@ -58,12 +57,12 @@ export default function SearchBar({ value, onChange }: SearchBarProps) {
           value={localValue}
           onChange={(e) => setLocalValue(e.target.value)}
           onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
-          placeholder="Search nodes..."
+          onBlur={() => setTimeout(() => setIsFocused(false), 150)}
+          placeholder="Search skills, projects..."
           className="
-            w-full py-2.5 pr-4 bg-transparent
-            text-white/90 text-sm font-mono
-            placeholder:text-white/30
+            w-full py-3.5 px-3 bg-transparent
+            text-white text-sm
+            placeholder:text-white/25
             focus:outline-none
           "
         />
@@ -74,31 +73,42 @@ export default function SearchBar({ value, onChange }: SearchBarProps) {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.8 }}
               onClick={handleClear}
-              className="
-                absolute right-3 p-1 rounded-full
-                bg-white/10 hover:bg-white/20
-                transition-colors
-              "
+              className="mr-3 p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
             >
-              <X size={12} className="text-white/70" />
+              <X size={14} className="text-white/50" />
             </motion.button>
           )}
         </AnimatePresence>
-      </div>
+      </motion.div>
       
-      {/* Hint text */}
+      {/* Quick suggestions */}
       <AnimatePresence>
         {isFocused && !localValue && (
-          <motion.p
+          <motion.div
             initial={{ opacity: 0, y: -5 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -5 }}
-            className="mt-2 ml-4 text-xs text-white/30 font-mono"
+            className="mt-3 flex items-center gap-2"
           >
-            Try "Python", "LLMs", or "Research"
-          </motion.p>
+            <Sparkles size={12} className="text-white/20" />
+            <div className="flex gap-1.5">
+              {suggestions.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setLocalValue(s)}
+                  className="px-2.5 py-1 rounded-lg text-xs font-mono
+                           bg-white/[0.02] text-white/30 
+                           border border-white/5
+                           hover:bg-white/[0.05] hover:text-white/50
+                           transition-all"
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          </motion.div>
         )}
       </AnimatePresence>
-    </motion.div>
+    </div>
   );
 }
