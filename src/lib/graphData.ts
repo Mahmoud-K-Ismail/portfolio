@@ -167,7 +167,10 @@ export const graphData: GraphData = {
           'Designed automated test suites and conducted code reviews, maintaining high code quality standards across the development lifecycle',
         ],
         technologies: ['Python', 'NLP', 'Arabic Processing', 'Open Source'],
-        links: [{ label: 'CAMeL Tools', url: 'https://github.com/CAMeL-Lab/camel_tools' }],
+        links: [
+          { label: 'CAMeL Lab', url: 'https://nyuad.nyu.edu/en/research/faculty-labs-and-projects/computational-approaches-to-modeling-language-lab.html' },
+          { label: 'CAMeL Tools', url: 'https://github.com/CAMeL-Lab/camel_tools' },
+        ],
       },
     },
     {
