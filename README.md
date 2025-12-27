@@ -1,36 +1,126 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Neural Network Portfolio
 
-## Getting Started
+An interactive 3D portfolio built with Next.js that visualizes background, skills, and experience as a neural network / knowledge graph.
 
-First, run the development server:
+![Portfolio Preview](preview.png)
+
+## ✨ Features
+
+- **Interactive Graph Visualization** - Explore experience as interconnected nodes
+- **Glassmorphism UI** - Beautiful frosted glass detail panels
+- **Search & Filter** - Find specific skills or projects instantly
+- **Smooth Animations** - Powered by Framer Motion
+- **Fully Responsive** - Works on desktop and mobile
+- **Dark Theme** - Easy on the eyes with glowing nodes
+
+## 🛠 Tech Stack
+
+- **Framework:** Next.js 14 (App Router)
+- **Visualization:** react-force-graph-2d
+- **Styling:** Tailwind CSS
+- **Animations:** Framer Motion
+- **Icons:** Lucide React
+- **Language:** TypeScript
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Node.js 18+
+- npm or yarn
+
+### Installation
 
 ```bash
+# Clone the repository
+git clone https://github.com/yourusername/portfolio.git
+
+# Navigate to the project
+cd portfolio
+
+# Install dependencies
+npm install
+
+# Start the development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 📁 Project Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+src/
+├── app/
+│   ├── globals.css      # Global styles & theme
+│   ├── layout.tsx       # Root layout with metadata
+│   └── page.tsx         # Main portfolio page
+├── components/
+│   ├── GraphContainer.tsx  # Force graph visualization
+│   ├── DetailPanel.tsx     # Glassmorphism slide-over panel
+│   └── SearchBar.tsx       # Search & filter component
+└── lib/
+    └── graphData.ts        # Node & link data structure
+```
 
-## Learn More
+## 🎨 Customization
 
-To learn more about Next.js, take a look at the following resources:
+### Adding New Nodes
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Edit `src/lib/graphData.ts` to add new experiences, projects, or skills:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```typescript
+// Add a new node
+{
+  id: 'new-project',
+  name: 'My New Project',
+  type: 'item',
+  color: '#a855f7',
+  size: 12,
+  details: {
+    title: 'My New Project',
+    subtitle: 'Description',
+    bullets: ['Feature 1', 'Feature 2'],
+    technologies: ['React', 'Node.js'],
+  },
+}
 
-## Deploy on Vercel
+// Connect it with a link
+{ source: 'projects', target: 'new-project' }
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Changing Colors
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Colors are defined at the top of `graphData.ts`:
+
+```typescript
+const colors = {
+  root: '#ffffff',      // White - main node
+  category: '#3b82f6',  // Blue - categories
+  item: '#a855f7',      // Purple - items
+  skill: '#22c55e',     // Green - skills
+};
+```
+
+## 🌐 Deployment
+
+### Vercel (Recommended)
+
+1. Push your code to GitHub
+2. Go to [vercel.com](https://vercel.com)
+3. Import your GitHub repository
+4. Click "Deploy" - Vercel auto-detects Next.js
+
+### GitHub Pages
+
+1. Uncomment `output: 'export'` in `next.config.ts`
+2. Run `npm run build`
+3. Deploy the `out` folder to GitHub Pages
+
+## 📜 License
+
+MIT License - feel free to use this for your own portfolio!
+
+## 🙏 Credits
+
+Built with ❤️ by Mahmoud Kassem
