@@ -125,9 +125,12 @@ export default function GraphContainer({ onNodeClick, searchTerm }: GraphContain
       fg.d3Force('center', null);
       fg.d3Force('link')?.strength(0);
       
+      // Center and fit the entire graph on load - more padding = more zoomed out
       setTimeout(() => {
-        fg.zoomToFit(400, 120);
-      }, 300);
+        fg.zoomToFit(800, 500);
+        // Center the view
+        fg.centerAt(0, 0, 0);
+      }, 500);
     }
   }, [isReady, visibleGraphData]);
 
@@ -321,7 +324,7 @@ export default function GraphContainer({ onNodeClick, searchTerm }: GraphContain
           enableNodeDrag={false}
           enableZoomInteraction={true}
           enablePanInteraction={true}
-          minZoom={0.3}
+          minZoom={0.2}
           maxZoom={3}
           cooldownTicks={0}
         />

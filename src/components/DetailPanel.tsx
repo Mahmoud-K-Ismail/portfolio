@@ -161,23 +161,24 @@ export default function DetailPanel({ node, onClose }: DetailPanelProps) {
               
               {/* Links */}
               {node.details.links && node.details.links.length > 0 && (
-                <div className="flex flex-wrap gap-3">
+                <div className="flex flex-wrap gap-2.5">
                   {node.details.links.map((link, i) => (
                     <a
                       key={i}
                       href={link.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2.5 px-5 py-3 rounded-xl text-base font-medium
-                               transition-all duration-200 hover:scale-[1.02]"
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium
+                               transition-all duration-200 hover:scale-[1.02] whitespace-nowrap
+                               min-w-0 flex-shrink"
                       style={{
                         backgroundColor: `${node.color}15`,
                         color: node.color,
                         border: `1px solid ${node.color}30`,
                       }}
                     >
-                      <ExternalLink size={18} />
-                      {link.label}
+                      <ExternalLink size={14} className="flex-shrink-0" />
+                      <span className="truncate">{link.label}</span>
                     </a>
                   ))}
                 </div>
