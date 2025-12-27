@@ -7,8 +7,10 @@ An interactive 3D portfolio built with Next.js that visualizes background, skill
 ## ✨ Features
 
 - **Interactive Graph Visualization** - Explore experience as interconnected nodes
+- **AI Career Assistant (RAG)** - Ask questions about experience, projects, and skills
 - **Glassmorphism UI** - Beautiful frosted glass detail panels
 - **Search & Filter** - Find specific skills or projects instantly
+- **Resume PDF Download** - Direct access to full resume
 - **Smooth Animations** - Powered by Framer Motion
 - **Fully Responsive** - Works on desktop and mobile
 - **Dark Theme** - Easy on the eyes with glowing nodes
@@ -47,18 +49,38 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
+### Setup
+
+1. **Add Resume PDF**: Place your resume PDF file in the `public` folder as `resume.pdf`
+   ```bash
+   cp /path/to/your/resume.pdf public/resume.pdf
+   ```
+
+2. **Mistral AI API for RAG Chat** (Recommended):
+   - Create a `.env.local` file in the root directory
+   - Add your Mistral API key:
+     ```
+     MISTRAL_API_KEY=your_api_key_here
+     ```
+   - Without the API key, the chat will use a simple keyword-based fallback system
+   - Get your free API key at [console.mistral.ai](https://console.mistral.ai)
+
 ## 📁 Project Structure
 
 ```
 src/
 ├── app/
-│   ├── globals.css      # Global styles & theme
-│   ├── layout.tsx       # Root layout with metadata
-│   └── page.tsx         # Main portfolio page
+│   ├── api/
+│   │   └── rag/
+│   │       └── route.ts    # RAG API endpoint for career questions
+│   ├── globals.css         # Global styles & theme
+│   ├── layout.tsx          # Root layout with metadata
+│   └── page.tsx            # Main portfolio page
 ├── components/
 │   ├── GraphContainer.tsx  # Force graph visualization
-│   ├── DetailPanel.tsx     # Glassmorphism slide-over panel
-│   └── SearchBar.tsx       # Search & filter component
+│   ├── DetailPanel.tsx     # Glassmorphism detail panel
+│   ├── SearchBar.tsx       # Search & filter component
+│   └── RAGChat.tsx         # AI career assistant chat
 └── lib/
     └── graphData.ts        # Node & link data structure
 ```

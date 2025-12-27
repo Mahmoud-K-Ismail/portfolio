@@ -28,7 +28,7 @@ export default function SearchBar({ value, onChange }: SearchBarProps) {
   const suggestions = ['Python', 'LLMs', 'Research', 'NLP'];
 
   return (
-    <div className="fixed top-8 left-8 z-30">
+    <div className="fixed top-8 left-24 sm:left-24 md:left-28 z-30">
       <motion.div
         initial={false}
         animate={{

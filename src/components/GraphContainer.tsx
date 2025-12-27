@@ -2,6 +2,8 @@
 
 import { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import dynamic from 'next/dynamic';
+import { motion } from 'framer-motion';
+import { RotateCcw } from 'lucide-react';
 import { graphData, GraphNode, filterNodesBySearch } from '@/lib/graphData';
 
 const ForceGraph2D = dynamic(() => import('react-force-graph-2d'), {
@@ -21,6 +23,7 @@ const CATEGORY_POSITIONS: Record<string, { x: number; y: number }> = {
   projects: { x: 300, y: -200 },
   research: { x: 300, y: 200 },
   skills: { x: -300, y: 200 },
+  resume: { x: 0, y: 300 },
 };
 
 // Child positions relative to parent (fan out)
@@ -115,7 +118,7 @@ export default function GraphContainer({ onNodeClick, searchTerm }: GraphContain
     };
   }, []);
 
-  // Configure forces
+  // Configure forces - only on initial load
   useEffect(() => {
     if (graphRef.current && isReady) {
       const fg = graphRef.current;
@@ -132,7 +135,9 @@ export default function GraphContainer({ onNodeClick, searchTerm }: GraphContain
         fg.centerAt(0, 0, 0);
       }, 500);
     }
-  }, [isReady, visibleGraphData]);
+    // Only run once on initial load, not when visibleGraphData changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isReady]);
 
   // Node sizes
   const getNodeSize = useCallback((node: GraphNode) => {
@@ -148,7 +153,7 @@ export default function GraphContainer({ onNodeClick, searchTerm }: GraphContain
     if (!isFinite(x) || !isFinite(y)) return;
     
     const nodeData = node as GraphNode;
-    const isHovered = hoveredNode === node.id;
+      const isHovered = hoveredNode === node.id;
     const isExpanded = expandedCategories.has(node.id);
     const hasChildren = graphData.nodes.some(n => n.parentId === node.id);
     const isHighlighted = !highlightedNodes || highlightedNodes.has(node.id);
@@ -196,14 +201,14 @@ export default function GraphContainer({ onNodeClick, searchTerm }: GraphContain
       ctx.strokeStyle = `${color}50`;
       ctx.lineWidth = 2;
       ctx.stroke();
-    }
+      }
 
-    // Label
+      // Label
     const fontSize = nodeData.type === 'root' ? 18 : nodeData.type === 'category' ? 15 : 13;
     ctx.font = `600 ${fontSize}px "Outfit", system-ui, sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
     const label = nodeData.name;
     const labelY = y + size + fontSize + 10;
     
@@ -248,13 +253,13 @@ export default function GraphContainer({ onNodeClick, searchTerm }: GraphContain
     const grad = ctx.createLinearGradient(sx, sy, tx, ty);
     grad.addColorStop(0, `${source.color || '#fff'}${Math.floor(opacity * 255).toString(16).padStart(2, '0')}`);
     grad.addColorStop(1, `${target.color || '#fff'}${Math.floor(opacity * 255).toString(16).padStart(2, '0')}`);
-    
-    ctx.beginPath();
+
+      ctx.beginPath();
     ctx.moveTo(sx, sy);
     ctx.lineTo(tx, ty);
     ctx.strokeStyle = grad;
     ctx.lineWidth = isHoverConnected ? 3 : 1.5;
-    ctx.stroke();
+      ctx.stroke();
   }, [hoveredNode]);
 
   // Handle click
@@ -262,9 +267,19 @@ export default function GraphContainer({ onNodeClick, searchTerm }: GraphContain
     const graphNode = graphData.nodes.find(n => n.id === node.id);
     if (!graphNode) return;
 
+    // If root node is clicked, just open detail panel (no view reset)
+    if (graphNode.type === 'root') {
+      if (graphNode.details) {
+        onNodeClick(graphNode);
+      }
+      return;
+    }
+
     // If it's a category with children, toggle expand
     const hasChildren = graphData.nodes.some(n => n.parentId === node.id);
     if (graphNode.type === 'category' && hasChildren) {
+      const wasExpanded = expandedCategories.has(node.id);
+      
       setExpandedCategories(prev => {
         const next = new Set(prev);
         if (next.has(node.id)) {
@@ -275,10 +290,52 @@ export default function GraphContainer({ onNodeClick, searchTerm }: GraphContain
         return next;
       });
       
-      // Refit view after expand
-      setTimeout(() => {
-        graphRef.current?.zoomToFit(400, 80);
-      }, 100);
+      // When expanding, fit to category + its children only
+      if (!wasExpanded) {
+        setTimeout(() => {
+          if (!graphRef.current) return;
+          
+          // Get the category position
+          const catX = node.fx ?? node.x ?? 0;
+          const catY = node.fy ?? node.y ?? 0;
+          
+          // Get all children of this category
+          const children = graphData.nodes.filter(n => n.parentId === node.id);
+          
+          // Calculate bounding box of category + children
+          let minX = catX - 35, maxX = catX + 35;
+          let minY = catY - 35, maxY = catY + 35;
+          
+          children.forEach((child, index) => {
+            const siblings = children;
+            const pos = getChildPosition(node.id, index, siblings.length);
+            const childSize = 22;
+            
+            minX = Math.min(minX, pos.x - childSize);
+            maxX = Math.max(maxX, pos.x + childSize);
+            minY = Math.min(minY, pos.y - childSize);
+            maxY = Math.max(maxY, pos.y + childSize);
+          });
+          
+          const width = maxX - minX;
+          const height = maxY - minY;
+          const centerX = (minX + maxX) / 2;
+          const centerY = (minY + maxY) / 2;
+          
+          // Small padding to fit nicely
+          const paddingX = 100;
+          const paddingY = 80;
+          
+          // Calculate zoom to fit just this category and its children
+          const zoomX = dimensions.width / (width + paddingX);
+          const zoomY = dimensions.height / (height + paddingY);
+          const zoom = Math.min(zoomX, zoomY);
+          
+          // Center and zoom to fit
+          graphRef.current.zoom(zoom, 300);
+          graphRef.current.centerAt(centerX, centerY, 300);
+        }, 150);
+      }
       return;
     }
 
@@ -286,7 +343,7 @@ export default function GraphContainer({ onNodeClick, searchTerm }: GraphContain
     if (graphNode.details) {
       onNodeClick(graphNode);
     }
-  }, [onNodeClick]);
+  }, [onNodeClick, expandedCategories, dimensions]);
 
   const handleNodeHover = useCallback((node: any) => {
     setHoveredNode(node?.id || null);
@@ -294,6 +351,51 @@ export default function GraphContainer({ onNodeClick, searchTerm }: GraphContain
       containerRef.current.style.cursor = node ? 'pointer' : 'grab';
     }
   }, []);
+
+  // Reset view to show all main categories
+  const resetView = useCallback(() => {
+    // Collapse all categories
+    setExpandedCategories(new Set());
+    
+    // Zoom to fit root + 4 main category nodes
+    setTimeout(() => {
+      if (!graphRef.current) return;
+      
+      // Calculate bounding box of root + 4 categories
+      const rootPos = CATEGORY_POSITIONS['root'];
+      const categoryNodes = ['experience', 'projects', 'research', 'skills'];
+      
+      let minX = rootPos.x - 45, maxX = rootPos.x + 45;
+      let minY = rootPos.y - 45, maxY = rootPos.y + 45;
+      
+      categoryNodes.forEach(catId => {
+        const pos = CATEGORY_POSITIONS[catId];
+        const size = 35;
+        minX = Math.min(minX, pos.x - size);
+        maxX = Math.max(maxX, pos.x + size);
+        minY = Math.min(minY, pos.y - size);
+        maxY = Math.max(maxY, pos.y + size);
+      });
+      
+      const width = maxX - minX;
+      const height = maxY - minY;
+      const centerX = (minX + maxX) / 2;
+      const centerY = (minY + maxY) / 2;
+      
+      // Padding to fit nicely
+      const paddingX = 200;
+      const paddingY = 150;
+      
+      // Calculate zoom to fit
+      const zoomX = dimensions.width / (width + paddingX);
+      const zoomY = dimensions.height / (height + paddingY);
+      const zoom = Math.min(zoomX, zoomY);
+      
+      // Center and zoom
+      graphRef.current.zoom(zoom, 400);
+      graphRef.current.centerAt(centerX, centerY, 400);
+    }, 100);
+  }, [dimensions]);
 
   // Larger click area
   const nodePointerAreaPaint = useCallback((node: any, color: string, ctx: CanvasRenderingContext2D) => {
@@ -307,27 +409,48 @@ export default function GraphContainer({ onNodeClick, searchTerm }: GraphContain
   }, [getNodeSize]);
 
   return (
-    <div ref={containerRef} className="w-full h-full" style={{ cursor: 'grab' }}>
+    <div ref={containerRef} className="w-full h-full relative" style={{ cursor: 'grab' }}>
+      {/* Reset View Button - floating near bottom center, above chat button */}
+      <motion.button
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: 0.5 }}
+        whileHover={{ scale: 1.15, rotate: -180 }}
+        whileTap={{ scale: 0.9 }}
+        onClick={resetView}
+        className="fixed bottom-32 left-1/2 -translate-x-1/2 z-30
+                   p-3 rounded-full
+                   bg-white/[0.08] backdrop-blur-sm
+                   border border-white/20
+                   text-white/60 hover:text-white
+                   hover:bg-white/[0.15] hover:border-white/30
+                   transition-all duration-300
+                   shadow-lg shadow-black/30"
+        title="Reset to overview"
+      >
+        <RotateCcw size={20} />
+      </motion.button>
+
       {isReady && (
-        <ForceGraph2D
-          ref={graphRef}
-          width={dimensions.width}
-          height={dimensions.height}
+      <ForceGraph2D
+        ref={graphRef}
+        width={dimensions.width}
+        height={dimensions.height}
           graphData={visibleGraphData}
-          nodeCanvasObject={paintNode}
+        nodeCanvasObject={paintNode}
           nodePointerAreaPaint={nodePointerAreaPaint}
-          linkCanvasObject={paintLink}
+        linkCanvasObject={paintLink}
           onNodeClick={handleNodeClick}
-          onNodeHover={handleNodeHover}
+        onNodeHover={handleNodeHover}
           nodeRelSize={1}
           backgroundColor="transparent"
           enableNodeDrag={false}
-          enableZoomInteraction={true}
-          enablePanInteraction={true}
+        enableZoomInteraction={true}
+        enablePanInteraction={true}
           minZoom={0.2}
           maxZoom={3}
           cooldownTicks={0}
-        />
+      />
       )}
     </div>
   );

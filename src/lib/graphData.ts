@@ -68,6 +68,7 @@ export const graphData: GraphData = {
         links: [
           { label: 'GitHub', url: 'https://github.com/Mahmoud-K-Ismail' },
           { label: 'LinkedIn', url: 'https://www.linkedin.com/in/mahmoud-Kassem-b02338263/' },
+          { label: 'Resume PDF', url: '/resume.pdf' },
         ],
       },
     },
@@ -102,6 +103,26 @@ export const graphData: GraphData = {
       type: 'category',
       color: colors.skills,
       size: 20,
+    },
+    {
+      id: 'resume',
+      name: 'Resume',
+      type: 'item',
+      color: '#f59e0b',
+      size: 18,
+      details: {
+        title: 'Resume PDF',
+        subtitle: 'Download my full resume',
+        bullets: [
+          'Complete professional experience and education history',
+          'Detailed project descriptions and technologies used',
+          'Research publications and academic achievements',
+          'Technical skills and certifications',
+        ],
+        links: [
+          { label: 'Download PDF', url: '/resume.pdf' },
+        ],
+      },
     },
 
     // ═══════════════════════════════════════
@@ -417,6 +438,7 @@ export const graphData: GraphData = {
     { source: 'root', target: 'projects' },
     { source: 'root', target: 'research' },
     { source: 'root', target: 'skills' },
+    { source: 'root', target: 'resume' },
 
     // Experience connections
     { source: 'experience', target: 'monta-ai' },

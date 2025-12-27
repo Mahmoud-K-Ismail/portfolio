@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import GraphContainer from '@/components/GraphContainer';
 import DetailPanel from '@/components/DetailPanel';
 import SearchBar from '@/components/SearchBar';
+import RAGChat from '@/components/RAGChat';
 import { GraphNode } from '@/lib/graphData';
 import { Github, Linkedin, Mail, MousePointer2, Expand } from 'lucide-react';
 
@@ -199,6 +200,9 @@ export default function Home() {
       
       {/* Detail Panel */}
       <DetailPanel node={activeNode} onClose={handleClosePanel} />
+      
+      {/* RAG Chat */}
+      <RAGChat />
     </main>
   );
 }
