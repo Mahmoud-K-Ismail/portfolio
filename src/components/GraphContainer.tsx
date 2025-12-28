@@ -28,17 +28,22 @@ const CATEGORY_POSITIONS: Record<string, { x: number; y: number }> = {
 };
 
 // Child positions relative to parent (fan out)
-const getChildPosition = (parentId: string, index: number, total: number) => {
+const getChildPosition = (parentId: string, index: number, total: number, nodeId?: string) => {
   const parent = CATEGORY_POSITIONS[parentId] || { x: 0, y: 0 };
   const angleStart = parentId === 'experience' ? Math.PI : 0;
   const angleSpread = Math.PI * 0.6;
   const angle = angleStart + (index / Math.max(total - 1, 1) - 0.5) * angleSpread;
   const distance = 180;
   
-  return {
-    x: parent.x + Math.cos(angle) * distance,
-    y: parent.y + Math.sin(angle) * distance,
-  };
+  let x = parent.x + Math.cos(angle) * distance;
+  let y = parent.y + Math.sin(angle) * distance;
+  
+  // Special case: Move ICSE node down to avoid overlapping
+  if (nodeId === 'icse-paper') {
+    y += 40; // Move down by 40 pixels
+  }
+  
+  return { x, y };
 };
 
 export default function GraphContainer({ onNodeClick, searchTerm }: GraphContainerProps) {
@@ -51,6 +56,7 @@ export default function GraphContainer({ onNodeClick, searchTerm }: GraphContain
   const constraintAnimationFrameRef = useRef<number | null>(null);
   const viewStateRef = useRef<{ centerX: number; centerY: number; zoom: number }>({ centerX: 0, centerY: 0, zoom: 1 });
   const isApplyingConstraintsRef = useRef(false);
+  const hasRunLandingAnimationRef = useRef(false);
 
   // Filter by search
   const highlightedNodes = useMemo(() => {
@@ -94,7 +100,7 @@ export default function GraphContainer({ onNodeClick, searchTerm }: GraphContain
           // Child node - position relative to parent
           const siblings = arr.filter(s => s.parentId === n.parentId);
           const index = siblings.findIndex(s => s.id === n.id);
-          pos = getChildPosition(n.parentId, index, siblings.length);
+          pos = getChildPosition(n.parentId, index, siblings.length, n.id);
         }
         
         return {
@@ -130,17 +136,54 @@ export default function GraphContainer({ onNodeClick, searchTerm }: GraphContain
     };
   }, []);
 
+  // Calculate the reset view dimensions (zoomed out to show all categories)
+  const getResetViewDimensions = useCallback(() => {
+    // Calculate bounding box of root + 4 categories
+    const rootPos = CATEGORY_POSITIONS['root'];
+    const categoryNodes = ['experience', 'projects', 'research', 'skills'];
+
+    let minX = rootPos.x - 45, maxX = rootPos.x + 45;
+    let minY = rootPos.y - 45, maxY = rootPos.y + 45;
+
+    categoryNodes.forEach(catId => {
+      const pos = CATEGORY_POSITIONS[catId];
+      const size = 35;
+      minX = Math.min(minX, pos.x - size);
+      maxX = Math.max(maxX, pos.x + size);
+      minY = Math.min(minY, pos.y - size);
+      maxY = Math.max(maxY, pos.y + size);
+    });
+
+    const width = maxX - minX;
+    const height = maxY - minY;
+    const centerX = (minX + maxX) / 2;
+    const centerY = (minY + maxY) / 2;
+
+    // Padding to fit nicely
+    const paddingX = 200;
+    const paddingY = 150;
+
+    // Calculate zoom to fit
+    const zoomX = dimensions.width / (width + paddingX);
+    const zoomY = dimensions.height / (height + paddingY);
+    const zoom = Math.min(zoomX, zoomY);
+
+    return { centerX, centerY, zoom };
+  }, [dimensions]);
+
   // Check if any nodes are visible in the viewport, if not, snap back to show whole graph
   const constrainView = useCallback(() => {
     if (!graphRef.current || !containerRef.current || isApplyingConstraintsRef.current) return;
-    
+
+    console.log('🔍 CONSTRAIN VIEW: Checking visibility');
+
     const fg = graphRef.current;
     const zoom = fg.zoom() || viewStateRef.current.zoom;
-    
+
     // Try to get current center from the graph's internal state
     let centerX = viewStateRef.current.centerX;
     let centerY = viewStateRef.current.centerY;
-    
+
     // Try to access the D3 zoom transform if available
     try {
       const zoomTransform = (fg as any).__zoom;
@@ -154,7 +197,7 @@ export default function GraphContainer({ onNodeClick, searchTerm }: GraphContain
     } catch (e) {
       // Fall back to tracked state
     }
-    
+
     // Calculate viewport bounds in graph coordinates
     const viewWidth = dimensions.width / zoom;
     const viewHeight = dimensions.height / zoom;
@@ -162,7 +205,7 @@ export default function GraphContainer({ onNodeClick, searchTerm }: GraphContain
     const viewMaxX = centerX + viewWidth / 2;
     const viewMinY = centerY - viewHeight / 2;
     const viewMaxY = centerY + viewHeight / 2;
-    
+
     // Check if any nodes are visible in the viewport
     let hasVisibleNodes = false;
     for (const node of visibleGraphData.nodes) {
@@ -170,67 +213,44 @@ export default function GraphContainer({ onNodeClick, searchTerm }: GraphContain
       const x = nodeAny.fx ?? nodeAny.x ?? 0;
       const y = nodeAny.fy ?? nodeAny.y ?? 0;
       const size = getNodeSize(node as GraphNode);
-      
+
       // Check if node overlaps with viewport
-      if (x + size >= viewMinX && x - size <= viewMaxX && 
+      if (x + size >= viewMinX && x - size <= viewMaxX &&
           y + size >= viewMinY && y - size <= viewMaxY) {
         hasVisibleNodes = true;
         break;
       }
     }
-    
-    // If no nodes are visible, snap back to show the whole graph
+
+    // If no nodes are visible, snap back to show the whole graph using reset view dimensions
     if (!hasVisibleNodes && visibleGraphData.nodes.length > 0) {
-      // Calculate bounds of all visible nodes
-      let minX = Infinity, maxX = -Infinity;
-      let minY = Infinity, maxY = -Infinity;
-      
-      visibleGraphData.nodes.forEach(node => {
-        const nodeAny = node as any;
-        const x = nodeAny.fx ?? nodeAny.x ?? 0;
-        const y = nodeAny.fy ?? nodeAny.y ?? 0;
-        const size = getNodeSize(node as GraphNode);
-        minX = Math.min(minX, x - size);
-        maxX = Math.max(maxX, x + size);
-        minY = Math.min(minY, y - size);
-        maxY = Math.max(maxY, y + size);
-      });
-      
-      const graphWidth = maxX - minX;
-      const graphHeight = maxY - minY;
-      const centerGraphX = (minX + maxX) / 2;
-      const centerGraphY = (minY + maxY) / 2;
-      
-      // Add padding for nice fit
-      const paddingX = 150;
-      const paddingY = 120;
-      
-      // Calculate zoom to fit
-      const zoomX = dimensions.width / (graphWidth + paddingX);
-      const zoomY = dimensions.height / (graphHeight + paddingY);
-      const newZoom = Math.min(zoomX, zoomY);
-      
-      // Snap back to show whole graph
+      console.log('🚨 CONSTRAIN VIEW: No nodes visible, snapping back to reset view');
+      const { centerX: resetCenterX, centerY: resetCenterY, zoom: resetZoom } = getResetViewDimensions();
+
+      // Snap back to reset view (same as landing animation final state)
       isApplyingConstraintsRef.current = true;
-      fg.zoom(newZoom, 400);
-      fg.centerAt(centerGraphX, centerGraphY, 400);
-      viewStateRef.current = { centerX: centerGraphX, centerY: centerGraphY, zoom: newZoom };
-      
+      fg.zoom(resetZoom, 400);
+      fg.centerAt(resetCenterX, resetCenterY, 400);
+      viewStateRef.current = { centerX: resetCenterX, centerY: resetCenterY, zoom: resetZoom };
+
       setTimeout(() => {
         isApplyingConstraintsRef.current = false;
       }, 450);
-      
+
       constraintAnimationFrameRef.current = null;
       return;
     }
-    
+
+    console.log('✅ CONSTRAIN VIEW: Nodes are visible, no action needed');
+
     // If nodes are visible, we're good - no constraints needed
     constraintAnimationFrameRef.current = null;
-  }, [visibleGraphData, dimensions, getNodeSize]);
+  }, [visibleGraphData, dimensions, getNodeSize, getResetViewDimensions]);
 
-  // Start constraint animation when needed
+  // Start constraint animation when needed (but NOT during landing animation)
   useEffect(() => {
-    if (isReady && graphRef.current) {
+    if (isReady && graphRef.current && hasRunLandingAnimationRef.current) {
+      // Only start constraint checking AFTER landing animation has completed
       // Check constraints more frequently for better responsiveness
       const interval = setInterval(() => {
         if (constraintAnimationFrameRef.current === null) {
@@ -246,28 +266,6 @@ export default function GraphContainer({ onNodeClick, searchTerm }: GraphContain
       };
     }
   }, [isReady, constrainView]);
-
-  // Configure forces - only on initial load
-  useEffect(() => {
-    if (graphRef.current && isReady) {
-      const fg = graphRef.current;
-      
-      // Disable forces since we're using fixed positions
-      fg.d3Force('charge')?.strength(0);
-      fg.d3Force('center', null);
-      fg.d3Force('link')?.strength(0);
-      
-      // Center and fit the entire graph on load - more padding = more zoomed out
-      setTimeout(() => {
-        fg.zoomToFit(800, 500);
-        // Center the view
-        fg.centerAt(0, 0, 0);
-        viewStateRef.current = { centerX: 0, centerY: 0, zoom: fg.zoom() || 1 };
-      }, 500);
-    }
-    // Only run once on initial load, not when visibleGraphData changes
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isReady]);
 
   // Image cache for node images
   const [imageCache, setImageCache] = useState<Map<string, HTMLImageElement>>(new Map());
@@ -357,10 +355,18 @@ export default function GraphContainer({ onNodeClick, searchTerm }: GraphContain
           const imgSize = size * 1.7;
           ctx.drawImage(img, x - imgSize / 2, y - imgSize / 2, imgSize, imgSize);
         } else {
-          // Larger size for item nodes with images (like NYU logo)
-          const imgSize = nodeData.type === 'item' ? size * 1.0 : size * 0.7;
-          ctx.globalAlpha = opacity;
-          ctx.drawImage(img, x - imgSize / 2, y - imgSize / 2, imgSize, imgSize);
+          // Special handling for NYU logo - wider aspect ratio
+          if (nodeData.image && nodeData.image.includes('NYU-Logo')) {
+            const imgWidth = size * 1.4; // Wider width
+            const imgHeight = size * 0.7; // Shorter height to maintain aspect ratio
+            ctx.globalAlpha = opacity;
+            ctx.drawImage(img, x - imgWidth / 2, y - imgHeight / 2, imgWidth, imgHeight);
+          } else {
+            // Larger size for item nodes with images
+            const imgSize = nodeData.type === 'item' ? size * 1.0 : size * 0.7;
+            ctx.globalAlpha = opacity;
+            ctx.drawImage(img, x - imgSize / 2, y - imgSize / 2, imgSize, imgSize);
+          }
         }
         ctx.restore();
       }
@@ -690,6 +696,7 @@ export default function GraphContainer({ onNodeClick, searchTerm }: GraphContain
       
       // When expanding, fit to category + its children only
       if (!wasExpanded) {
+        console.log('🔍 EXPAND: Starting expand animation for category:', node.id);
         // Wait for state to update and nodes to appear in visibleGraphData
         // Use a recursive check to ensure nodes are actually visible
         const checkAndZoom = (attempts = 0) => {
@@ -773,13 +780,11 @@ export default function GraphContainer({ onNodeClick, searchTerm }: GraphContain
           const zoom = Math.min(zoomX, zoomY);
           
           // Center and zoom to fit
-          isApplyingConstraintsRef.current = true;
+          // Note: We don't use isApplyingConstraintsRef here because this is a user-triggered expand,
+          // not the automatic constraint system
           graphRef.current.zoom(zoom, 300);
           graphRef.current.centerAt(centerX, centerY, 300);
           viewStateRef.current = { centerX, centerY, zoom };
-          setTimeout(() => {
-            isApplyingConstraintsRef.current = false;
-          }, 350);
           
           // Restart constraint checking after animation
           setTimeout(() => {
@@ -810,58 +815,98 @@ export default function GraphContainer({ onNodeClick, searchTerm }: GraphContain
   const resetView = useCallback(() => {
     // Collapse all categories
     setExpandedCategories(new Set());
-    
+
     // Cancel any ongoing constraint animation
     if (constraintAnimationFrameRef.current) {
       cancelAnimationFrame(constraintAnimationFrameRef.current);
       constraintAnimationFrameRef.current = null;
     }
-    
+
     // Zoom to fit root + 4 main category nodes
     setTimeout(() => {
       if (!graphRef.current) return;
-      
-      // Calculate bounding box of root + 4 categories
-      const rootPos = CATEGORY_POSITIONS['root'];
-      const categoryNodes = ['experience', 'projects', 'research', 'skills'];
-      
-      let minX = rootPos.x - 45, maxX = rootPos.x + 45;
-      let minY = rootPos.y - 45, maxY = rootPos.y + 45;
-      
-      categoryNodes.forEach(catId => {
-        const pos = CATEGORY_POSITIONS[catId];
-        const size = 35;
-        minX = Math.min(minX, pos.x - size);
-        maxX = Math.max(maxX, pos.x + size);
-        minY = Math.min(minY, pos.y - size);
-        maxY = Math.max(maxY, pos.y + size);
-      });
-      
-      const width = maxX - minX;
-      const height = maxY - minY;
-      const centerX = (minX + maxX) / 2;
-      const centerY = (minY + maxY) / 2;
-      
-      // Padding to fit nicely
-      const paddingX = 200;
-      const paddingY = 150;
-      
-      // Calculate zoom to fit
-      const zoomX = dimensions.width / (width + paddingX);
-      const zoomY = dimensions.height / (height + paddingY);
-      const zoom = Math.min(zoomX, zoomY);
-      
+
+      const { centerX, centerY, zoom } = getResetViewDimensions();
+
       // Center and zoom
       graphRef.current.zoom(zoom, 400);
       graphRef.current.centerAt(centerX, centerY, 400);
       viewStateRef.current = { centerX, centerY, zoom };
-      
+
       // Restart constraint checking after animation
       setTimeout(() => {
         constrainView();
       }, 450);
     }, 100);
-  }, [dimensions, constrainView]);
+  }, [dimensions, constrainView, getResetViewDimensions]);
+
+  // Configure forces - run immediately when ready
+  useEffect(() => {
+    if (!graphRef.current || !isReady) {
+      return;
+    }
+
+    const fg = graphRef.current;
+
+    // Disable forces since we're using fixed positions
+    fg.d3Force('charge')?.strength(0);
+    fg.d3Force('center', null);
+    fg.d3Force('link')?.strength(0);
+  }, [isReady]);
+
+  // Landing animation - ONLY on initial page load, runs after graph is fully loaded
+  useEffect(() => {
+    // Only run once, when isReady becomes true for the first time
+    if (!isReady || hasRunLandingAnimationRef.current) {
+      return;
+    }
+
+    // Mark as run IMMEDIATELY
+    hasRunLandingAnimationRef.current = true;
+    console.log('🎬 LANDING ANIMATION: Starting on page load');
+
+    // Wait for graphRef to be available, then add delay for graph to fully render
+    const checkAndRun = () => {
+      if (!graphRef.current) {
+        setTimeout(checkAndRun, 50);
+        return;
+      }
+
+      // Add delay to ensure graph is fully rendered before starting animation
+      setTimeout(() => {
+        const fg = graphRef.current;
+        if (!fg) return;
+
+        // Landing page animation: zoom in on root, then after 1 second, call resetView
+        const rootZoom = 3; // Close-up zoom level
+        isApplyingConstraintsRef.current = true; // Prevent constraint checking during animation
+        fg.zoom(rootZoom, 0);
+        fg.centerAt(0, 0, 0);
+        viewStateRef.current = { centerX: 0, centerY: 0, zoom: rootZoom };
+        console.log('🎬 LANDING ANIMATION: Zoomed to root');
+
+        // After 1 second, call resetView (same as clicking reset button)
+        setTimeout(() => {
+          console.log('🎬 LANDING ANIMATION: Calling resetView');
+          isApplyingConstraintsRef.current = false;
+          // Call resetView directly without dependency
+          setExpandedCategories(new Set());
+          const { centerX, centerY, zoom } = getResetViewDimensions();
+          if (graphRef.current) {
+            graphRef.current.zoom(zoom, 400);
+            graphRef.current.centerAt(centerX, centerY, 400);
+            viewStateRef.current = { centerX, centerY, zoom };
+            setTimeout(() => {
+              constrainView();
+            }, 450);
+          }
+        }, 1000);
+      }, 1000); // 1000ms delay to ensure graph is fully rendered
+    };
+
+    checkAndRun();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isReady]); // Only depend on isReady, not resetView
 
   // Larger click area
   const nodePointerAreaPaint = useCallback((node: any, color: string, ctx: CanvasRenderingContext2D) => {
@@ -909,13 +954,14 @@ export default function GraphContainer({ onNodeClick, searchTerm }: GraphContain
           onNodeClick={handleNodeClick}
         onNodeHover={handleNodeHover}
         onZoom={(transform: { k: number; x: number; y: number }) => {
+          console.log('📸 ON ZOOM: Zoom changed to', transform.k);
           // Update zoom and calculate center from transform
           viewStateRef.current.zoom = transform.k;
           // Convert screen translation to graph coordinates
           viewStateRef.current.centerX = -transform.x / transform.k;
           viewStateRef.current.centerY = -transform.y / transform.k;
-          // Only check constraints if we're not already applying them (prevents infinite loop)
-          if (!isApplyingConstraintsRef.current) {
+          // Only check constraints if we're not already applying them AND landing animation has completed
+          if (!isApplyingConstraintsRef.current && hasRunLandingAnimationRef.current) {
             constrainView();
           }
         }}

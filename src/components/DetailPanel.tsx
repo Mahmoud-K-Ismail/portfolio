@@ -96,27 +96,29 @@ export default function DetailPanel({ node, position, onClose }: DetailPanelProp
             
             {/* Content Container with proper padding */}
             <div className="relative w-full py-8 px-8 md:py-10 md:px-12 flex flex-col overflow-hidden">
-              {/* Close button - top right */}
+              {/* Close button - top right - More noticeable */}
               <button
                 onClick={onClose}
-                className="absolute top-6 right-6 md:top-8 md:right-8 z-10 p-2.5 rounded-full 
-                         transition-all duration-200 hover:scale-110
+                className="absolute top-6 right-6 md:top-8 md:right-8 z-10 p-3 rounded-full 
+                         transition-all duration-200 hover:scale-125
                          backdrop-blur-sm"
                 style={{
-                  background: `rgba(255, 255, 255, 0.1)`,
-                  border: `2px solid ${node.color}50`,
-                  boxShadow: `0 0 20px ${node.color}30, inset 0 0 10px ${node.color}10`,
+                  background: `rgba(255, 255, 255, 0.15)`,
+                  border: `2px solid ${node.color}70`,
+                  boxShadow: `0 0 25px ${node.color}50, inset 0 0 15px ${node.color}15`,
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = `rgba(255, 255, 255, 0.15)`;
-                  e.currentTarget.style.boxShadow = `0 0 30px ${node.color}50, inset 0 0 15px ${node.color}15`;
+                  e.currentTarget.style.background = `rgba(255, 255, 255, 0.25)`;
+                  e.currentTarget.style.boxShadow = `0 0 40px ${node.color}70, inset 0 0 20px ${node.color}25`;
+                  e.currentTarget.style.borderColor = `${node.color}90`;
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = `rgba(255, 255, 255, 0.1)`;
-                  e.currentTarget.style.boxShadow = `0 0 20px ${node.color}30, inset 0 0 10px ${node.color}10`;
+                  e.currentTarget.style.background = `rgba(255, 255, 255, 0.15)`;
+                  e.currentTarget.style.boxShadow = `0 0 25px ${node.color}50, inset 0 0 15px ${node.color}15`;
+                  e.currentTarget.style.borderColor = `${node.color}70`;
                 }}
               >
-                <X size={20} className="text-white" style={{ color: node.color }} />
+                <X size={22} className="text-white" style={{ color: node.color }} strokeWidth={2.5} />
               </button>
 
               {/* Scrollable content */}

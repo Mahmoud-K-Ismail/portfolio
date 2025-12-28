@@ -11,8 +11,12 @@ interface Message {
   content: string;
 }
 
-export default function RAGChat() {
-  const [isOpen, setIsOpen] = useState(false);
+interface RAGChatProps {
+  isOpen: boolean;
+  setIsOpen: (open: boolean) => void;
+}
+
+export default function RAGChat({ isOpen, setIsOpen }: RAGChatProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
@@ -96,21 +100,7 @@ export default function RAGChat() {
 
   return (
     <>
-      {/* Chat Button */}
-      <motion.button
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        transition={{ delay: 0.5 }}
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.9 }}
-        onClick={() => setIsOpen(true)}
-        className="fixed bottom-20 left-1/2 -translate-x-1/2 z-30
-                   p-4 rounded-full bg-gradient-to-br from-purple-500 to-blue-500
-                   text-white shadow-lg shadow-purple-500/50
-                   hover:shadow-xl hover:shadow-purple-500/60 transition-all"
-      >
-        <MessageCircle size={24} />
-      </motion.button>
+      {/* Chat Button - positioned next to social icons via page.tsx */}
 
       {/* Chat Window */}
       <AnimatePresence>

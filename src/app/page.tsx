@@ -7,7 +7,7 @@ import DetailPanel from '@/components/DetailPanel';
 import SearchBar from '@/components/SearchBar';
 import RAGChat from '@/components/RAGChat';
 import { GraphNode } from '@/lib/graphData';
-import { Github, Linkedin, Mail, MousePointer2, Expand } from 'lucide-react';
+import { Github, Linkedin, Mail, MousePointer2, Expand, MessageCircle } from 'lucide-react';
 
 export default function Home() {
   const [activeNode, setActiveNode] = useState<GraphNode | null>(null);
@@ -15,6 +15,7 @@ export default function Home() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [showHint, setShowHint] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   useEffect(() => {
     const loadTimer = setTimeout(() => setIsLoading(false), 1800);
@@ -153,30 +154,97 @@ export default function Home() {
         )}
       </AnimatePresence>
       
-      {/* Socials */}
+      {/* Socials and Chat */}
       <AnimatePresence>
         {!isLoading && (
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.3 }}
-            className="fixed bottom-8 right-8 z-20 flex gap-2"
+            className="fixed bottom-8 right-8 z-20 flex flex-col items-end gap-3"
           >
-            <SocialLink 
-              href="https://github.com/Mahmoud-K-Ismail" 
-              icon={<Github size={18} />} 
-              label="GitHub" 
-            />
-            <SocialLink 
-              href="https://www.linkedin.com/in/mahmoud-Kassem-b02338263/" 
-              icon={<Linkedin size={18} />} 
-              label="LinkedIn" 
-            />
-            <SocialLink 
-              href="mailto:mahmoud.kassem@nyu.edu" 
-              icon={<Mail size={18} />} 
-              label="Email" 
-            />
+            {/* Chat button with label - side by side */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.5 }}
+              className="flex items-center gap-3"
+            >
+              {/* Chat bubble with rounded tail */}
+              <motion.button
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.7 }}
+                onClick={() => setIsChatOpen(true)}
+                className="relative group/bubble flex items-center"
+              >
+                <div className="relative px-4 py-2.5 rounded-2xl bg-gradient-to-r from-purple-500/95 to-blue-500/95
+                           text-white text-sm font-medium shadow-xl shadow-purple-500/60
+                           border border-white/30 backdrop-blur-sm whitespace-nowrap
+                           group-hover/bubble:shadow-2xl group-hover/bubble:shadow-purple-500/80 transition-all
+                           cursor-pointer"
+                >
+                  Ask me about Mahmoud
+                </div>
+                {/* Rounded tail - proper chat bubble style using SVG with curves */}
+                <svg
+                  className="absolute right-0 top-1/2 translate-x-[calc(100%-1px)] -translate-y-1/2 z-10"
+                  width="16"
+                  height="20"
+                  viewBox="0 0 16 20"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M0 10C0 4 4 0 10 0C12.5 0 14.5 2 14.5 4.5C14.5 7 12.5 9 10 9H6L2 13L0 11V10Z"
+                    fill="url(#chatGradient)"
+                    style={{ filter: 'drop-shadow(2px 0px 4px rgba(0, 0, 0, 0.25))' }}
+                  />
+                  <defs>
+                    <linearGradient id="chatGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="rgb(168, 85, 247)" stopOpacity="0.95" />
+                      <stop offset="100%" stopColor="rgb(59, 130, 246)" stopOpacity="0.95" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+              </motion.button>
+              
+              {/* Chat icon - bigger */}
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => setIsChatOpen(true)}
+                className="relative p-4 rounded-xl bg-gradient-to-br from-purple-500 via-purple-600 to-blue-500
+                           text-white shadow-xl shadow-purple-500/60
+                           hover:shadow-2xl hover:shadow-purple-500/80 transition-all
+                           border-2 border-white/20 hover:border-white/40
+                           backdrop-blur-sm"
+                style={{
+                  boxShadow: '0 0 20px rgba(168, 85, 247, 0.5), 0 0 40px rgba(59, 130, 246, 0.3)',
+                }}
+              >
+                <MessageCircle size={24} strokeWidth={2} />
+              </motion.button>
+            </motion.div>
+            
+            {/* Social links */}
+            <div className="flex gap-2">
+              <SocialLink 
+                href="https://github.com/Mahmoud-K-Ismail" 
+                icon={<Github size={18} />} 
+                label="GitHub" 
+              />
+              <SocialLink 
+                href="https://www.linkedin.com/in/mahmoud-Kassem-b02338263/" 
+                icon={<Linkedin size={18} />} 
+                label="LinkedIn" 
+              />
+              <SocialLink 
+                href="mailto:mahmoud.kassem@nyu.edu" 
+                icon={<Mail size={18} />} 
+                label="Email" 
+              />
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -204,21 +272,34 @@ export default function Home() {
       <DetailPanel node={activeNode} position={nodePosition} onClose={handleClosePanel} />
       
       {/* RAG Chat */}
-      <RAGChat />
+      <RAGChat isOpen={isChatOpen} setIsOpen={setIsChatOpen} />
     </main>
   );
 }
 
 function SocialLink({ href, icon, label }: { href: string; icon: React.ReactNode; label: string }) {
+  // Different colors for each social link to stand out
+  const getColorClasses = (label: string) => {
+    switch (label.toLowerCase()) {
+      case 'github':
+        return 'bg-gray-800/80 border-gray-600/50 text-gray-200 hover:bg-gray-700/90 hover:border-gray-500 hover:text-white shadow-lg shadow-gray-900/50';
+      case 'linkedin':
+        return 'bg-blue-600/80 border-blue-500/50 text-blue-100 hover:bg-blue-500/90 hover:border-blue-400 hover:text-white shadow-lg shadow-blue-900/50';
+      case 'email':
+        return 'bg-red-600/80 border-red-500/50 text-red-100 hover:bg-red-500/90 hover:border-red-400 hover:text-white shadow-lg shadow-red-900/50';
+      default:
+        return 'bg-white/[0.15] border-white/20 text-white/70 hover:text-white hover:bg-white/[0.25] hover:border-white/30';
+    }
+  };
+
   return (
     <motion.a
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      whileHover={{ scale: 1.05 }}
+      whileHover={{ scale: 1.1 }}
       whileTap={{ scale: 0.95 }}
-      className="p-3 rounded-xl bg-white/[0.03] border border-white/5 text-white/30 
-                 hover:text-white hover:bg-white/[0.06] hover:border-white/10 transition-all"
+      className={`p-3 rounded-xl border-2 transition-all backdrop-blur-sm ${getColorClasses(label)}`}
       aria-label={label}
     >
       {icon}

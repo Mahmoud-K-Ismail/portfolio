@@ -36,21 +36,27 @@ export default function SearchBar({ value, onChange }: SearchBarProps) {
         }}
         className={`
           relative flex items-center
-          bg-white/[0.03] backdrop-blur-xl
-          border rounded-2xl
+          bg-white/[0.12] backdrop-blur-xl
+          border-2 rounded-2xl
           transition-all duration-300
           ${isFocused 
-            ? 'border-white/20 shadow-lg shadow-black/20' 
-            : 'border-white/5 hover:border-white/10'
+            ? 'border-white/40 shadow-2xl shadow-blue-500/30 bg-white/[0.18]' 
+            : 'border-white/25 hover:border-white/35 hover:bg-white/[0.15] shadow-lg shadow-blue-500/20'
           }
         `}
+        style={{
+          boxShadow: isFocused 
+            ? '0 0 30px rgba(59, 130, 246, 0.4), 0 4px 20px rgba(0, 0, 0, 0.3)'
+            : '0 0 20px rgba(59, 130, 246, 0.2), 0 4px 15px rgba(0, 0, 0, 0.2)',
+        }}
       >
         <Search 
-          size={18} 
+          size={20} 
           className={`
             ml-4 flex-shrink-0 transition-colors duration-200
-            ${isFocused ? 'text-white/60' : 'text-white/30'}
+            ${isFocused ? 'text-white/90' : 'text-white/60'}
           `}
+          strokeWidth={2.5}
         />
         <input
           type="text"
@@ -60,9 +66,9 @@ export default function SearchBar({ value, onChange }: SearchBarProps) {
           onBlur={() => setTimeout(() => setIsFocused(false), 150)}
           placeholder="Search skills, projects..."
           className="
-            w-full py-3.5 px-3 bg-transparent
-            text-white text-sm
-            placeholder:text-white/25
+            w-full py-4 px-3 bg-transparent
+            text-white text-sm font-medium
+            placeholder:text-white/40
             focus:outline-none
           "
         />
