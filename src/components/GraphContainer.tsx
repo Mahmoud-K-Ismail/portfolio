@@ -48,12 +48,23 @@ export default function GraphContainer({ onNodeClick, searchTerm }: GraphContain
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
   const [isReady, setIsReady] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const constraintAnimationFrameRef = useRef<number | null>(null);
+  const viewStateRef = useRef<{ centerX: number; centerY: number; zoom: number }>({ centerX: 0, centerY: 0, zoom: 1 });
+  const isApplyingConstraintsRef = useRef(false);
 
   // Filter by search
   const highlightedNodes = useMemo(() => {
     if (!searchTerm.trim()) return null;
     return filterNodesBySearch(searchTerm);
   }, [searchTerm]);
+
+  // Node sizes
+  const getNodeSize = useCallback((node: GraphNode) => {
+    if (node.type === 'root') return 45;
+    if (node.type === 'category') return 35;
+    return 22;
+  }, []);
+
 
   // Build visible graph with pre-calculated positions
   const visibleGraphData = useMemo(() => {
@@ -119,6 +130,123 @@ export default function GraphContainer({ onNodeClick, searchTerm }: GraphContain
     };
   }, []);
 
+  // Check if any nodes are visible in the viewport, if not, snap back to show whole graph
+  const constrainView = useCallback(() => {
+    if (!graphRef.current || !containerRef.current || isApplyingConstraintsRef.current) return;
+    
+    const fg = graphRef.current;
+    const zoom = fg.zoom() || viewStateRef.current.zoom;
+    
+    // Try to get current center from the graph's internal state
+    let centerX = viewStateRef.current.centerX;
+    let centerY = viewStateRef.current.centerY;
+    
+    // Try to access the D3 zoom transform if available
+    try {
+      const zoomTransform = (fg as any).__zoom;
+      if (zoomTransform && typeof zoomTransform === 'object' && 'x' in zoomTransform && 'y' in zoomTransform && 'k' in zoomTransform) {
+        const transform = zoomTransform as { x: number; y: number; k: number };
+        centerX = -transform.x / transform.k;
+        centerY = -transform.y / transform.k;
+        viewStateRef.current.centerX = centerX;
+        viewStateRef.current.centerY = centerY;
+      }
+    } catch (e) {
+      // Fall back to tracked state
+    }
+    
+    // Calculate viewport bounds in graph coordinates
+    const viewWidth = dimensions.width / zoom;
+    const viewHeight = dimensions.height / zoom;
+    const viewMinX = centerX - viewWidth / 2;
+    const viewMaxX = centerX + viewWidth / 2;
+    const viewMinY = centerY - viewHeight / 2;
+    const viewMaxY = centerY + viewHeight / 2;
+    
+    // Check if any nodes are visible in the viewport
+    let hasVisibleNodes = false;
+    for (const node of visibleGraphData.nodes) {
+      const nodeAny = node as any;
+      const x = nodeAny.fx ?? nodeAny.x ?? 0;
+      const y = nodeAny.fy ?? nodeAny.y ?? 0;
+      const size = getNodeSize(node as GraphNode);
+      
+      // Check if node overlaps with viewport
+      if (x + size >= viewMinX && x - size <= viewMaxX && 
+          y + size >= viewMinY && y - size <= viewMaxY) {
+        hasVisibleNodes = true;
+        break;
+      }
+    }
+    
+    // If no nodes are visible, snap back to show the whole graph
+    if (!hasVisibleNodes && visibleGraphData.nodes.length > 0) {
+      // Calculate bounds of all visible nodes
+      let minX = Infinity, maxX = -Infinity;
+      let minY = Infinity, maxY = -Infinity;
+      
+      visibleGraphData.nodes.forEach(node => {
+        const nodeAny = node as any;
+        const x = nodeAny.fx ?? nodeAny.x ?? 0;
+        const y = nodeAny.fy ?? nodeAny.y ?? 0;
+        const size = getNodeSize(node as GraphNode);
+        minX = Math.min(minX, x - size);
+        maxX = Math.max(maxX, x + size);
+        minY = Math.min(minY, y - size);
+        maxY = Math.max(maxY, y + size);
+      });
+      
+      const graphWidth = maxX - minX;
+      const graphHeight = maxY - minY;
+      const centerGraphX = (minX + maxX) / 2;
+      const centerGraphY = (minY + maxY) / 2;
+      
+      // Add padding for nice fit
+      const paddingX = 150;
+      const paddingY = 120;
+      
+      // Calculate zoom to fit
+      const zoomX = dimensions.width / (graphWidth + paddingX);
+      const zoomY = dimensions.height / (graphHeight + paddingY);
+      const newZoom = Math.min(zoomX, zoomY);
+      
+      // Snap back to show whole graph
+      isApplyingConstraintsRef.current = true;
+      fg.zoom(newZoom, 400);
+      fg.centerAt(centerGraphX, centerGraphY, 400);
+      viewStateRef.current = { centerX: centerGraphX, centerY: centerGraphY, zoom: newZoom };
+      
+      setTimeout(() => {
+        isApplyingConstraintsRef.current = false;
+      }, 450);
+      
+      constraintAnimationFrameRef.current = null;
+      return;
+    }
+    
+    // If nodes are visible, we're good - no constraints needed
+    constraintAnimationFrameRef.current = null;
+  }, [visibleGraphData, dimensions, getNodeSize]);
+
+  // Start constraint animation when needed
+  useEffect(() => {
+    if (isReady && graphRef.current) {
+      // Check constraints more frequently for better responsiveness
+      const interval = setInterval(() => {
+        if (constraintAnimationFrameRef.current === null) {
+          constrainView();
+        }
+      }, 50); // Check every 50ms for smoother constraints
+      
+      return () => {
+        clearInterval(interval);
+        if (constraintAnimationFrameRef.current) {
+          cancelAnimationFrame(constraintAnimationFrameRef.current);
+        }
+      };
+    }
+  }, [isReady, constrainView]);
+
   // Configure forces - only on initial load
   useEffect(() => {
     if (graphRef.current && isReady) {
@@ -134,18 +262,12 @@ export default function GraphContainer({ onNodeClick, searchTerm }: GraphContain
         fg.zoomToFit(800, 500);
         // Center the view
         fg.centerAt(0, 0, 0);
+        viewStateRef.current = { centerX: 0, centerY: 0, zoom: fg.zoom() || 1 };
       }, 500);
     }
     // Only run once on initial load, not when visibleGraphData changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isReady]);
-
-  // Node sizes
-  const getNodeSize = useCallback((node: GraphNode) => {
-    if (node.type === 'root') return 45;
-    if (node.type === 'category') return 35;
-    return 22;
-  }, []);
 
   // Image cache for node images
   const [imageCache, setImageCache] = useState<Map<string, HTMLImageElement>>(new Map());
@@ -568,29 +690,72 @@ export default function GraphContainer({ onNodeClick, searchTerm }: GraphContain
       
       // When expanding, fit to category + its children only
       if (!wasExpanded) {
-        setTimeout(() => {
+        // Wait for state to update and nodes to appear in visibleGraphData
+        // Use a recursive check to ensure nodes are actually visible
+        const checkAndZoom = (attempts = 0) => {
           if (!graphRef.current) return;
           
-          // Get the category position
-          const catX = node.fx ?? node.x ?? 0;
-          const catY = node.fy ?? node.y ?? 0;
+          // Get all visible nodes for this category (category + its children)
+          const categoryNode = visibleGraphData.nodes.find(n => n.id === node.id);
+          const children = visibleGraphData.nodes.filter(n => n.parentId === node.id);
           
-          // Get all children of this category
-          const children = graphData.nodes.filter(n => n.parentId === node.id);
+          // If nodes aren't ready yet, wait a bit more (max 5 attempts = 500ms)
+          if (!categoryNode || children.length === 0) {
+            if (attempts < 5) {
+              setTimeout(() => checkAndZoom(attempts + 1), 100);
+            }
+            return;
+          }
           
-          // Calculate bounding box of category + children
-          let minX = catX - 35, maxX = catX + 35;
-          let minY = catY - 35, maxY = catY + 35;
+          // Cancel any ongoing constraint animation
+          if (constraintAnimationFrameRef.current) {
+            cancelAnimationFrame(constraintAnimationFrameRef.current);
+            constraintAnimationFrameRef.current = null;
+          }
           
-          children.forEach((child, index) => {
-            const siblings = children;
-            const pos = getChildPosition(node.id, index, siblings.length);
-            const childSize = 22;
+          const categoryNodeAny = categoryNode as any;
+          const catX = categoryNodeAny.fx ?? categoryNodeAny.x ?? 0;
+          const catY = categoryNodeAny.fy ?? categoryNodeAny.y ?? 0;
+          const catSize = getNodeSize(categoryNode as GraphNode);
+          
+          // Helper to calculate node bounds including label
+          const getNodeBounds = (nodeX: number, nodeY: number, nodeSize: number, nodeType: string) => {
+            // Node circle bounds
+            let nodeMinX = nodeX - nodeSize;
+            let nodeMaxX = nodeX + nodeSize;
+            let nodeMinY = nodeY - nodeSize;
+            let nodeMaxY = nodeY + nodeSize;
             
-            minX = Math.min(minX, pos.x - childSize);
-            maxX = Math.max(maxX, pos.x + childSize);
-            minY = Math.min(minY, pos.y - childSize);
-            maxY = Math.max(maxY, pos.y + childSize);
+            // Add label space (labels are below nodes)
+            const fontSize = nodeType === 'root' ? 18 : nodeType === 'category' ? 15 : 13;
+            const labelY = nodeY + nodeSize + fontSize + 10;
+            const labelHeight = fontSize + 12; // fontSize + padY * 2
+            // Estimate label width (will be calculated more accurately, but use generous estimate)
+            const estimatedLabelWidth = 100; // Most labels are shorter
+            
+            nodeMinX = Math.min(nodeMinX, nodeX - estimatedLabelWidth / 2);
+            nodeMaxX = Math.max(nodeMaxX, nodeX + estimatedLabelWidth / 2);
+            nodeMaxY = Math.max(nodeMaxY, labelY + labelHeight / 2);
+            
+            return { minX: nodeMinX, maxX: nodeMaxX, minY: nodeMinY, maxY: nodeMaxY };
+          };
+          
+          // Calculate bounding box of category + children with node sizes and labels
+          const catBounds = getNodeBounds(catX, catY, catSize, categoryNode.type);
+          let minX = catBounds.minX, maxX = catBounds.maxX;
+          let minY = catBounds.minY, maxY = catBounds.maxY;
+          
+          children.forEach((child) => {
+            const childAny = child as any;
+            const childX = childAny.fx ?? childAny.x ?? 0;
+            const childY = childAny.fy ?? childAny.y ?? 0;
+            const childSize = getNodeSize(child as GraphNode);
+            const childBounds = getNodeBounds(childX, childY, childSize, child.type);
+            
+            minX = Math.min(minX, childBounds.minX);
+            maxX = Math.max(maxX, childBounds.maxX);
+            minY = Math.min(minY, childBounds.minY);
+            maxY = Math.max(maxY, childBounds.maxY);
           });
           
           const width = maxX - minX;
@@ -598,9 +763,9 @@ export default function GraphContainer({ onNodeClick, searchTerm }: GraphContain
           const centerX = (minX + maxX) / 2;
           const centerY = (minY + maxY) / 2;
           
-          // Small padding to fit nicely
-          const paddingX = 100;
-          const paddingY = 80;
+          // Add generous padding to ensure everything fits nicely
+          const paddingX = 150;
+          const paddingY = 120;
           
           // Calculate zoom to fit just this category and its children
           const zoomX = dimensions.width / (width + paddingX);
@@ -608,9 +773,22 @@ export default function GraphContainer({ onNodeClick, searchTerm }: GraphContain
           const zoom = Math.min(zoomX, zoomY);
           
           // Center and zoom to fit
+          isApplyingConstraintsRef.current = true;
           graphRef.current.zoom(zoom, 300);
           graphRef.current.centerAt(centerX, centerY, 300);
-        }, 150);
+          viewStateRef.current = { centerX, centerY, zoom };
+          setTimeout(() => {
+            isApplyingConstraintsRef.current = false;
+          }, 350);
+          
+          // Restart constraint checking after animation
+          setTimeout(() => {
+            constrainView();
+          }, 350);
+        };
+        
+        // Start checking after a short delay
+        setTimeout(() => checkAndZoom(), 100);
       }
       return;
     }
@@ -619,7 +797,7 @@ export default function GraphContainer({ onNodeClick, searchTerm }: GraphContain
     if (graphNode.details) {
       onNodeClick(graphNode, nodePosition);
     }
-  }, [onNodeClick, expandedCategories, dimensions]);
+  }, [onNodeClick, expandedCategories, dimensions, constrainView, visibleGraphData, getNodeSize]);
 
   const handleNodeHover = useCallback((node: any) => {
     setHoveredNode(node?.id || null);
@@ -632,6 +810,12 @@ export default function GraphContainer({ onNodeClick, searchTerm }: GraphContain
   const resetView = useCallback(() => {
     // Collapse all categories
     setExpandedCategories(new Set());
+    
+    // Cancel any ongoing constraint animation
+    if (constraintAnimationFrameRef.current) {
+      cancelAnimationFrame(constraintAnimationFrameRef.current);
+      constraintAnimationFrameRef.current = null;
+    }
     
     // Zoom to fit root + 4 main category nodes
     setTimeout(() => {
@@ -670,8 +854,14 @@ export default function GraphContainer({ onNodeClick, searchTerm }: GraphContain
       // Center and zoom
       graphRef.current.zoom(zoom, 400);
       graphRef.current.centerAt(centerX, centerY, 400);
+      viewStateRef.current = { centerX, centerY, zoom };
+      
+      // Restart constraint checking after animation
+      setTimeout(() => {
+        constrainView();
+      }, 450);
     }, 100);
-  }, [dimensions]);
+  }, [dimensions, constrainView]);
 
   // Larger click area
   const nodePointerAreaPaint = useCallback((node: any, color: string, ctx: CanvasRenderingContext2D) => {
@@ -718,12 +908,29 @@ export default function GraphContainer({ onNodeClick, searchTerm }: GraphContain
         linkCanvasObject={paintLink}
           onNodeClick={handleNodeClick}
         onNodeHover={handleNodeHover}
+        onZoom={(transform: { k: number; x: number; y: number }) => {
+          // Update zoom and calculate center from transform
+          viewStateRef.current.zoom = transform.k;
+          // Convert screen translation to graph coordinates
+          viewStateRef.current.centerX = -transform.x / transform.k;
+          viewStateRef.current.centerY = -transform.y / transform.k;
+          // Only check constraints if we're not already applying them (prevents infinite loop)
+          if (!isApplyingConstraintsRef.current) {
+            constrainView();
+          }
+        }}
+        onBackgroundClick={() => {
+          // Trigger constraint check after pan (with slight delay to let pan complete)
+          setTimeout(() => {
+            constrainView();
+          }, 10);
+        }}
           nodeRelSize={1}
           backgroundColor="transparent"
           enableNodeDrag={false}
         enableZoomInteraction={true}
         enablePanInteraction={true}
-          minZoom={0.2}
+          minZoom={0.1}
           maxZoom={3}
           cooldownTicks={0}
       />

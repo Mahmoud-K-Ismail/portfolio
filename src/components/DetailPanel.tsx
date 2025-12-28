@@ -73,7 +73,7 @@ export default function DetailPanel({ node, position, onClose }: DetailPanelProp
               mass: 0.8,
             }}
             className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50
-                       w-[88vw] max-w-2xl min-h-[400px] max-h-[85vh] rounded-2xl overflow-hidden"
+                       w-[90vw] max-w-2xl max-h-[85vh] rounded-2xl overflow-hidden"
             style={{
               background: `radial-gradient(circle at center, ${node.color}08 0%, #0a0a0f 40%, #050505 100%)`,
               border: `2px solid ${node.color}40`,
@@ -95,11 +95,11 @@ export default function DetailPanel({ node, position, onClose }: DetailPanelProp
             />
             
             {/* Content Container with proper padding */}
-            <div className="relative w-full h-full pt-8 pb-0 px-8 md:pt-10 md:pb-0 md:px-10 flex flex-col overflow-hidden">
+            <div className="relative w-full py-8 px-8 md:py-10 md:px-12 flex flex-col overflow-hidden">
               {/* Close button - top right */}
               <button
                 onClick={onClose}
-                className="absolute top-5 right-5 z-10 p-2.5 rounded-full 
+                className="absolute top-6 right-6 md:top-8 md:right-8 z-10 p-2.5 rounded-full 
                          transition-all duration-200 hover:scale-110
                          backdrop-blur-sm"
                 style={{
@@ -120,15 +120,16 @@ export default function DetailPanel({ node, position, onClose }: DetailPanelProp
               </button>
 
               {/* Scrollable content */}
-              <div className="flex-1 overflow-y-auto px-1 pr-3 custom-scrollbar" style={{ paddingBottom: 0 }}>
-                {/* Header */}
-                <div className="mb-6">
+              <div className="overflow-y-auto pr-2 custom-scrollbar">
+                
+                {/* ═══════════ HEADER SECTION ═══════════ */}
+                <div className="mb-8">
                   {/* Badge */}
                   <motion.div
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1 }}
-                    className="flex items-center gap-2 mb-3"
+                    className="flex items-center gap-2 mb-4"
                   >
                     <div 
                       className="w-2 h-2 rounded-full animate-pulse"
@@ -142,8 +143,8 @@ export default function DetailPanel({ node, position, onClose }: DetailPanelProp
                     </span>
                   </motion.div>
                   
-                  {/* Image and Title */}
-                  <div className="flex items-start gap-3 mb-3">
+                  {/* Logo + Title Row */}
+                  <div className="flex items-center gap-5 mb-5">
                     {node.details.image && (
                       <motion.div
                         initial={{ opacity: 0, scale: 0.8 }}
@@ -152,10 +153,10 @@ export default function DetailPanel({ node, position, onClose }: DetailPanelProp
                         className="flex-shrink-0"
                       >
                         <div 
-                          className="w-14 h-14 md:w-16 md:h-16 rounded-lg p-2.5 flex items-center justify-center bg-white"
+                          className="w-16 h-16 md:w-20 md:h-20 rounded-xl p-2.5 flex items-center justify-center bg-white"
                           style={{
-                            border: `1.5px solid ${node.color}30`,
-                            boxShadow: `0 4px 20px ${node.color}20`,
+                            border: `2px solid ${node.color}30`,
+                            boxShadow: `0 4px 24px ${node.color}25`,
                           }}
                         >
                           <img 
@@ -174,7 +175,7 @@ export default function DetailPanel({ node, position, onClose }: DetailPanelProp
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.2 }}
-                        className="text-lg md:text-xl font-bold text-white mb-1 leading-tight"
+                        className="text-xl md:text-2xl font-bold text-white mb-2 leading-tight"
                       >
                         {node.details.title}
                       </motion.h2>
@@ -184,7 +185,7 @@ export default function DetailPanel({ node, position, onClose }: DetailPanelProp
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: 0.25 }}
-                          className="text-white/50 text-sm"
+                          className="text-white/60 text-sm md:text-base"
                         >
                           {node.details.subtitle}
                         </motion.p>
@@ -192,23 +193,23 @@ export default function DetailPanel({ node, position, onClose }: DetailPanelProp
                     </div>
                   </div>
                   
-                  {/* Meta */}
+                  {/* Meta info */}
                   {(node.details.period || node.details.location) && (
                     <motion.div
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: 0.3 }}
-                      className="flex flex-wrap gap-3 text-xs md:text-sm"
+                      className="flex flex-wrap gap-4 text-sm"
                     >
                       {node.details.period && (
-                        <div className="flex items-center gap-1.5 text-white/40">
-                          <Calendar size={13} />
+                        <div className="flex items-center gap-2 text-white/50">
+                          <Calendar size={14} />
                           <span className="font-mono">{node.details.period}</span>
                         </div>
                       )}
                       {node.details.location && (
-                        <div className="flex items-center gap-1.5 text-white/40">
-                          <MapPin size={13} />
+                        <div className="flex items-center gap-2 text-white/50">
+                          <MapPin size={14} />
                           <span className="font-mono">{node.details.location}</span>
                         </div>
                       )}
@@ -216,47 +217,47 @@ export default function DetailPanel({ node, position, onClose }: DetailPanelProp
                   )}
                 </div>
                 
-                {/* Divider */}
+                {/* ═══════════ DIVIDER ═══════════ */}
                 <div 
-                  className="h-px mb-5"
-                  style={{ background: `linear-gradient(90deg, transparent, ${node.color}30, transparent)` }}
+                  className="h-px mb-12"
+                  style={{ background: `linear-gradient(90deg, transparent, ${node.color}40, transparent)` }}
                 />
                 
-                {/* Bullets */}
-                <div className="space-y-4 mb-5">
+                {/* ═══════════ DESCRIPTION SECTION ═══════════ */}
+                <div className="space-y-6 mb-14 pt-2 px-4 md:px-6">
                   {node.details.bullets.map((bullet, i) => (
                     <motion.div
                       key={i}
                       initial={{ opacity: 0, x: -15 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.2 + i * 0.03, duration: 0.3 }}
-                      className="flex gap-3"
+                      className="flex gap-4"
                       style={{ willChange: 'transform, opacity' }}
                     >
                       <div 
-                        className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                        className="w-2 h-2 rounded-full flex-shrink-0"
                         style={{ 
                           backgroundColor: node.color,
-                          marginTop: '0.5em',
+                          marginTop: '0.6em',
                           alignSelf: 'flex-start'
                         }}
                       />
-                      <p className="text-white/70 text-sm leading-normal flex-1 pr-2">
+                      <p className="text-white/70 text-sm md:text-base leading-relaxed flex-1">
                         {bullet}
                       </p>
                     </motion.div>
                   ))}
                 </div>
                 
-                {/* Technologies */}
+                {/* ═══════════ TECH STACK SECTION ═══════════ */}
                 {node.details.technologies && node.details.technologies.length > 0 && (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.5 }}
-                    className="mb-5"
+                    className="mb-6 pt-2 px-4 md:px-6"
                   >
-                    <div className="flex items-center gap-2 mb-3">
+                    <div className="flex items-center gap-2 mb-5">
                       <Code2 size={16} style={{ color: node.color }} />
                       <span 
                         className="text-sm font-mono uppercase tracking-wider font-semibold"
@@ -265,11 +266,11 @@ export default function DetailPanel({ node, position, onClose }: DetailPanelProp
                         Tech Stack
                       </span>
                     </div>
-                    <div className="flex flex-wrap gap-3">
+                    <div className="flex flex-wrap gap-2.5">
                       {node.details.technologies.map((tech) => (
                         <span
                           key={tech}
-                          className="px-8 py-2 rounded-lg text-xs font-mono font-medium
+                          className="px-4 py-2 rounded-lg text-xs font-mono font-medium
                                    transition-all duration-200 cursor-default
                                    backdrop-blur-sm"
                           style={{
@@ -296,13 +297,13 @@ export default function DetailPanel({ node, position, onClose }: DetailPanelProp
                   </motion.div>
                 )}
                 
-                {/* Links */}
+                {/* ═══════════ LINKS SECTION ═══════════ */}
                 {node.details.links && node.details.links.length > 0 && (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.55 }}
-                    className="flex flex-wrap gap-2"
+                    className="flex flex-wrap gap-2.5 pb-2 px-2 md:px-4"
                   >
                     {node.details.links.map((link, i) => (
                       <a
@@ -310,7 +311,7 @@ export default function DetailPanel({ node, position, onClose }: DetailPanelProp
                         href={link.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 px-8 py-2 rounded-lg text-xs md:text-sm font-medium
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium
                                  transition-all duration-200 whitespace-nowrap
                                  backdrop-blur-sm"
                         style={{
@@ -330,8 +331,8 @@ export default function DetailPanel({ node, position, onClose }: DetailPanelProp
                           e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.2)';
                         }}
                       >
-                        <ExternalLink size={12} className="flex-shrink-0" />
-                        <span className="truncate">{link.label}</span>
+                        <ExternalLink size={14} className="flex-shrink-0" />
+                        <span>{link.label}</span>
                       </a>
                     ))}
                   </motion.div>
