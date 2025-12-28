@@ -170,60 +170,48 @@ export default function Home() {
               transition={{ delay: 0.5 }}
               className="flex items-center gap-3"
             >
-              {/* Chat bubble with rounded tail */}
+              {/* Chat bubble - modern clean design */}
               <motion.button
                 initial={{ opacity: 0, x: 10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.7 }}
                 onClick={() => setIsChatOpen(true)}
-                className="relative group/bubble flex items-center"
+                className="relative group/bubble"
               >
-                <div className="relative px-4 py-2.5 rounded-2xl bg-gradient-to-r from-purple-500/95 to-blue-500/95
-                           text-white text-sm font-medium shadow-xl shadow-purple-500/60
-                           border border-white/30 backdrop-blur-sm whitespace-nowrap
-                           group-hover/bubble:shadow-2xl group-hover/bubble:shadow-purple-500/80 transition-all
-                           cursor-pointer"
+                <div className="relative px-8 py-3.5 rounded-2xl bg-white/10 backdrop-blur-md
+                           text-white text-sm font-medium
+                           border border-white/20
+                           whitespace-nowrap min-w-[200px] w-auto
+                           group-hover/bubble:bg-white/15 group-hover/bubble:border-white/30 transition-all
+                           cursor-pointer shadow-lg"
                 >
                   Ask me about Mahmoud
                 </div>
-                {/* Rounded tail - proper chat bubble style using SVG with curves */}
-                <svg
-                  className="absolute right-0 top-1/2 translate-x-[calc(100%-1px)] -translate-y-1/2 z-10"
-                  width="16"
-                  height="20"
-                  viewBox="0 0 16 20"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M0 10C0 4 4 0 10 0C12.5 0 14.5 2 14.5 4.5C14.5 7 12.5 9 10 9H6L2 13L0 11V10Z"
-                    fill="url(#chatGradient)"
-                    style={{ filter: 'drop-shadow(2px 0px 4px rgba(0, 0, 0, 0.25))' }}
-                  />
-                  <defs>
-                    <linearGradient id="chatGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stopColor="rgb(168, 85, 247)" stopOpacity="0.95" />
-                      <stop offset="100%" stopColor="rgb(59, 130, 246)" stopOpacity="0.95" />
-                    </linearGradient>
-                  </defs>
-                </svg>
+                {/* Clean rounded tail */}
+                <div 
+                  className="absolute right-0 top-1/2 translate-x-[calc(100%-1px)] -translate-y-1/2 z-10 w-0 h-0"
+                  style={{
+                    borderTop: '7px solid transparent',
+                    borderBottom: '7px solid transparent',
+                    borderLeft: '10px solid rgba(255, 255, 255, 0.1)',
+                  }}
+                />
               </motion.button>
               
-              {/* Chat icon - bigger */}
+              {/* Chat icon - bigger and cleaner */}
               <motion.button
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={() => setIsChatOpen(true)}
-                className="relative p-4 rounded-xl bg-gradient-to-br from-purple-500 via-purple-600 to-blue-500
+                className="relative p-4 rounded-full bg-gradient-to-br from-purple-500 to-blue-500
                            text-white shadow-xl shadow-purple-500/60
                            hover:shadow-2xl hover:shadow-purple-500/80 transition-all
-                           border-2 border-white/20 hover:border-white/40
-                           backdrop-blur-sm"
+                           border-2 border-white/20"
                 style={{
-                  boxShadow: '0 0 20px rgba(168, 85, 247, 0.5), 0 0 40px rgba(59, 130, 246, 0.3)',
+                  boxShadow: '0 0 25px rgba(168, 85, 247, 0.5), 0 0 50px rgba(59, 130, 246, 0.3)',
                 }}
               >
-                <MessageCircle size={24} strokeWidth={2} />
+                <MessageCircle size={24} strokeWidth={2.5} />
               </motion.button>
             </motion.div>
             
