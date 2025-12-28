@@ -250,6 +250,7 @@ export default function Home() {
               <LegendItem color="#3b82f6" label="Experience" />
               <LegendItem color="#8b5cf6" label="Projects" />
               <LegendItem color="#ec4899" label="Research" />
+              <LegendItem color="#f59e0b" label="Education" />
               <LegendItem color="#10b981" label="Skills" />
             </div>
           </motion.div>
