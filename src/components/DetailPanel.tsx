@@ -73,7 +73,7 @@ export default function DetailPanel({ node, position, onClose }: DetailPanelProp
               mass: 0.8,
             }}
             className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50
-                       w-[90vw] max-w-2xl max-h-[85vh] rounded-2xl overflow-hidden"
+                       w-[94vw] max-w-4xl max-h-[85vh] rounded-2xl overflow-hidden"
             style={{
               background: `radial-gradient(circle at center, ${node.color}08 0%, #0a0a0f 40%, #050505 100%)`,
               border: `2px solid ${node.color}40`,
@@ -95,7 +95,7 @@ export default function DetailPanel({ node, position, onClose }: DetailPanelProp
             />
             
             {/* Content Container with proper padding */}
-            <div className="relative w-full py-8 px-8 md:py-10 md:px-12 flex flex-col overflow-hidden">
+            <div className="relative w-full py-12 px-12 md:py-14 md:px-16 flex flex-col overflow-hidden">
               {/* Close button - top right - More noticeable */}
               <button
                 onClick={onClose}
@@ -125,7 +125,7 @@ export default function DetailPanel({ node, position, onClose }: DetailPanelProp
               <div className="overflow-y-auto pr-2 custom-scrollbar">
                 
                 {/* ═══════════ HEADER SECTION ═══════════ */}
-                <div className="mb-8">
+                <div className="mb-10">
                   {/* Badge */}
                   <motion.div
                     initial={{ opacity: 0, y: -10 }}
@@ -221,12 +221,12 @@ export default function DetailPanel({ node, position, onClose }: DetailPanelProp
                 
                 {/* ═══════════ DIVIDER ═══════════ */}
                 <div 
-                  className="h-px mb-12"
+                  className="h-px mb-14"
                   style={{ background: `linear-gradient(90deg, transparent, ${node.color}40, transparent)` }}
                 />
                 
                 {/* ═══════════ DESCRIPTION SECTION ═══════════ */}
-                <div className="space-y-6 mb-14 pt-2 px-4 md:px-6">
+                <div className="space-y-6 mb-16 pt-2 px-6 md:px-8">
                   {node.details.bullets.map((bullet, i) => (
                     <motion.div
                       key={i}
@@ -257,9 +257,9 @@ export default function DetailPanel({ node, position, onClose }: DetailPanelProp
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.5 }}
-                    className="mb-6 pt-2 px-4 md:px-6"
+                    className="mb-12 pt-4 px-6 md:px-8"
                   >
-                    <div className="flex items-center gap-2 mb-5">
+                    <div className="flex items-center gap-2 mb-6">
                       <Code2 size={16} style={{ color: node.color }} />
                       <span 
                         className="text-sm font-mono uppercase tracking-wider font-semibold"
@@ -268,11 +268,11 @@ export default function DetailPanel({ node, position, onClose }: DetailPanelProp
                         Tech Stack
                       </span>
                     </div>
-                    <div className="flex flex-wrap gap-2.5">
+                    <div className="flex flex-wrap gap-4">
                       {node.details.technologies.map((tech) => (
                         <span
                           key={tech}
-                          className="px-4 py-2 rounded-lg text-xs font-mono font-medium
+                          className="px-6 py-3 rounded-lg text-xs font-mono font-medium
                                    transition-all duration-200 cursor-default
                                    backdrop-blur-sm"
                           style={{
@@ -305,7 +305,7 @@ export default function DetailPanel({ node, position, onClose }: DetailPanelProp
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.55 }}
-                    className="flex flex-wrap gap-2.5 pb-2 px-2 md:px-4"
+                    className="flex flex-wrap gap-4 pb-6 px-6 md:px-8"
                   >
                     {node.details.links.map((link, i) => (
                       <a
@@ -313,7 +313,7 @@ export default function DetailPanel({ node, position, onClose }: DetailPanelProp
                         href={link.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium
+                        className="inline-flex items-center gap-3 px-6 py-3 rounded-lg text-sm font-medium
                                  transition-all duration-200 whitespace-nowrap
                                  backdrop-blur-sm"
                         style={{
