@@ -2,10 +2,11 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   // For Vercel deployment via GitHub, no special config needed
-  // Enable static export and basePath only when building for GitHub Pages
+  // Enable static export only when building for GitHub Pages
+  // Note: For root URL (mahmoud-k-ismail.github.io), repo must be named 'mahmoud-k-ismail.github.io'
   ...(process.env.GITHUB_PAGES === 'true' && { 
     output: 'export',
-    basePath: '/portfolio', // Required for GitHub Pages when repo is not named username.github.io
+    // basePath: '/portfolio', // Uncomment if repo is named 'portfolio' and you want /portfolio/ subpath
   }),
   
   // Optimize images
