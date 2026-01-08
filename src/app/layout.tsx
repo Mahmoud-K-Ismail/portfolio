@@ -6,6 +6,15 @@ export const metadata: Metadata = {
   description: "Interactive portfolio showcasing experience in AI/NLP, Applied Mathematics, and Software Engineering. Explore my neural network of projects, research, and skills.",
   keywords: ["Mahmoud Kassem", "Portfolio", "AI", "NLP", "Applied Mathematics", "Software Engineering", "Machine Learning"],
   authors: [{ name: "Mahmoud Kassem" }],
+  icons: {
+    icon: [
+      { url: '/202510-30-NYUAD_mki4895-0785-RetSquare.jpg', sizes: '32x32', type: 'image/jpeg' },
+      { url: '/icon.svg', sizes: 'any' },
+    ],
+    apple: [
+      { url: '/202510-30-NYUAD_mki4895-0785-RetSquare.jpg', sizes: '180x180', type: 'image/jpeg' },
+    ],
+  },
   openGraph: {
     title: "Mahmoud Kassem | CS & Applied Mathematics",
     description: "Interactive portfolio showcasing experience in AI/NLP, Applied Mathematics, and Software Engineering.",

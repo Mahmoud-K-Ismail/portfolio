@@ -2,8 +2,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   // For Vercel deployment via GitHub, no special config needed
-  // Uncomment 'output: export' only if deploying to GitHub Pages
-  // output: 'export',
+  // Enable static export only when building for GitHub Pages
+  ...(process.env.GITHUB_PAGES === 'true' && { output: 'export' }),
   
   // Optimize images
   images: {

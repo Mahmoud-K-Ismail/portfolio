@@ -53,3 +53,59 @@ git push -u origin main
 - Make sure your resume PDF is in `public/resume.pdf`
 - All future pushes to `main` branch will auto-deploy
 
+---
+
+## Deploy to GitHub Pages (Separate from Vercel)
+
+This setup allows you to deploy to `mahmoud-k-ismail.github.io` **without affecting** your Vercel deployment.
+
+### Step 1: Enable GitHub Pages in Repository Settings
+
+1. Go to your GitHub repository: `https://github.com/mahmoud-k-ismail/portfolio`
+2. Navigate to **Settings** → **Pages**
+3. Under **Source**, select **"Deploy from a branch"**
+4. Choose branch: **`gh-pages`**
+5. Folder: **`/ (root)`**
+6. Click **Save**
+
+### Step 2: Initial Deployment
+
+The GitHub Actions workflow is set up to deploy manually. To deploy:
+
+1. Go to your repository on GitHub
+2. Click on **Actions** tab
+3. Select **"Deploy to GitHub Pages"** workflow
+4. Click **"Run workflow"** button (on the right)
+5. Select the branch (usually `main`)
+6. Click **"Run workflow"**
+
+The workflow will:
+- Build your Next.js app as a static site
+- Deploy it to the `gh-pages` branch
+- Your site will be live at `https://mahmoud-k-ismail.github.io`
+
+### Step 3: Future Deployments
+
+**Option A: Manual Trigger (Recommended)**
+- Go to **Actions** → **"Deploy to GitHub Pages"** → **"Run workflow"**
+- This ensures you control when GitHub Pages updates
+
+**Option B: Automatic on Branch Push (Optional)**
+- Uncomment the `push` section in `.github/workflows/deploy-gh-pages.yml`
+- Push to the specified branch to auto-deploy
+
+### Important Notes:
+
+- ✅ **Vercel deployment is unaffected** - This only deploys to GitHub Pages
+- ✅ **Manual control** - GitHub Pages only updates when you trigger the workflow
+- ✅ **Static export** - GitHub Pages uses a static build (no server-side features)
+- ⚠️ **API routes** - The RAG API (`/api/rag`) won't work on GitHub Pages (static hosting)
+- ⚠️ **Environment variables** - If needed, add them as GitHub Secrets in repository settings
+
+### Troubleshooting:
+
+- **Workflow not showing?** Make sure the `.github/workflows/deploy-gh-pages.yml` file is committed and pushed
+- **Build fails?** Check the Actions tab for error logs
+- **Site not updating?** Wait a few minutes after deployment, GitHub Pages can take 1-2 minutes to update
+
+
