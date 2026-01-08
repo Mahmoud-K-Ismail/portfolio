@@ -28,10 +28,28 @@ jobs:
         run: npm ci
       
       - name: Build for GitHub Pages
-        run: npm run build:gh-pages
+        run: |
+          echo "Building with GITHUB_PAGES=true..."
+          npm run build:gh-pages || {
+            echo "Build failed. Checking for common issues..."
+            echo "Checking if out directory exists..."
+            ls -la || true
+            exit 1
+          }
         env:
           # Add any environment variables needed for build here
           # MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+      
+      - name: Verify build output
+        run: |
+          if [ ! -d "out" ]; then
+            echo "Error: out directory not found after build"
+            echo "Contents of current directory:"
+            ls -la
+            exit 1
+          fi
+          echo "Build output verified. Contents:"
+          ls -la out | head -20
       
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
